@@ -5,8 +5,8 @@ struct request_authorization_arg {
 };
 
 enum request_authorization_status {
-    SUCCESS,
-    USER_NOT_FOUND
+    REQUEST_AUTHORIZATION_SUCCESS,
+    REQUEST_AUTHORIZATION_USER_NOT_FOUND
 };
 
 struct request_authorization_ret {
@@ -22,8 +22,8 @@ struct request_access_token_arg {
 };
 
 enum request_access_token_status {
-    SUCCESS,
-    REQUEST_DENIED
+    REQUEST_ACESS_TOKEN_SUCCESS,
+    REQUEST_ACESS_TOKEN_REQUEST_DENIED
 };
 
 struct request_access_token_ret {
@@ -50,11 +50,11 @@ struct validate_delegated_action_arg {
 };
 
 enum validate_delegated_action_status {
-    PERMISSION_GRANTED,
-    PERMISSION_DENIED,
-    TOKEN_EXPIRED,
-    RESOURCE_NOT_FOUND,
-    OPERATION_NOT_PERMITTED
+    VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED,
+    VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED,
+    VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED,
+    VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND,
+    VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED
 };
 
 struct validate_delegated_action_ret {
@@ -69,8 +69,8 @@ struct approve_request_token_arg {
 
 enum approve_request_token_status {
     /* FIXME: Maybe this needs changes? */
-    SUCCESS,
-    REQUEST_DENIED
+    APPROVE_REQUEST_TOKEN_SUCCESS,
+    APPROVE_REQUEST_TOKEN_REQUEST_DENIED
 };
 
 struct approve_request_token_ret {

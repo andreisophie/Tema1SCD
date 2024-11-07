@@ -20,8 +20,8 @@ struct request_authorization_arg {
 typedef struct request_authorization_arg request_authorization_arg;
 
 enum request_authorization_status {
-	SUCCESS = 0,
-	USER_NOT_FOUND = 1,
+	REQUEST_AUTHORIZATION_SUCCESS = 0,
+	REQUEST_AUTHORIZATION_USER_NOT_FOUND = 1,
 };
 typedef enum request_authorization_status request_authorization_status;
 
@@ -38,8 +38,8 @@ struct request_access_token_arg {
 typedef struct request_access_token_arg request_access_token_arg;
 
 enum request_access_token_status {
-	SUCCESS = 0,
-	REQUEST_DENIED = 1,
+	REQUEST_ACESS_TOKEN_SUCCESS = 0,
+	REQUEST_ACESS_TOKEN_REQUEST_DENIED = 1,
 };
 typedef enum request_access_token_status request_access_token_status;
 
@@ -68,11 +68,11 @@ struct validate_delegated_action_arg {
 typedef struct validate_delegated_action_arg validate_delegated_action_arg;
 
 enum validate_delegated_action_status {
-	PERMISSION_GRANTED = 0,
-	PERMISSION_DENIED = 1,
-	TOKEN_EXPIRED = 2,
-	RESOURCE_NOT_FOUND = 3,
-	OPERATION_NOT_PERMITTED = 4,
+	VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED = 0,
+	VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED = 1,
+	VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED = 2,
+	VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND = 3,
+	VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED = 4,
 };
 typedef enum validate_delegated_action_status validate_delegated_action_status;
 
@@ -87,8 +87,8 @@ struct approve_request_token_arg {
 typedef struct approve_request_token_arg approve_request_token_arg;
 
 enum approve_request_token_status {
-	SUCCESS = 0,
-	REQUEST_DENIED = 1,
+	APPROVE_REQUEST_TOKEN_SUCCESS = 0,
+	APPROVE_REQUEST_TOKEN_REQUEST_DENIED = 1,
 };
 typedef enum approve_request_token_status approve_request_token_status;
 
