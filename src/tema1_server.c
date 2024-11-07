@@ -7,7 +7,57 @@
 #include "tema1.h"
 #include <stdio.h> 
 #include <time.h> 
-#include <rpc/rpc.h> 
+#include <rpc/rpc.h>
+
+#define USERID_SIZE 16 
+char **user_ids;
+#define STING_SIZE 64
+char **resources;
+int token_validity;
+FILE *approval_file_ptr;
+
+void initialize_server(char *userid_file, char *resource_file, char *approval_file, int arg_token_validity) {
+	// Read client IDs
+	FILE *userid_file_ptr = fopen(userid_file, "r");
+	if (userid_file_ptr == NULL) {
+		printf("Eroare la deschiderea fisierului %s\n", userid_file);
+		exit(1);
+	}
+	int client_count;
+	fscanf(userid_file_ptr, "%d", &client_count);
+	user_ids = (char **)malloc(client_count * sizeof(char *));
+	for (int i = 0; i < client_count; i++) {
+		user_ids[i] = (char *)malloc(USERID_SIZE * sizeof(char));
+		fscanf(userid_file_ptr, "%s", user_ids[i]);
+	}
+	fclose(userid_file_ptr);
+
+	// Read resources
+	FILE *resource_file_ptr = fopen(resource_file, "r");
+	if (resource_file_ptr == NULL) {
+		printf("Eroare la deschiderea fisierului %s\n", resource_file);
+		exit(1);
+	}
+	int resource_count;
+	fscanf(resource_file_ptr, "%d", &resource_count);
+	resources = (char **)malloc(resource_count * sizeof(char *));
+	for (int i = 0; i < resource_count; i++) {
+		resources[i] = (char *)malloc(STING_SIZE * sizeof(char));
+		fscanf(resource_file_ptr, "%s", resources[i]);
+	}
+	fclose(resource_file_ptr);
+
+	// Open approvals file
+	approval_file_ptr = fopen(approval_file, "r");
+	if (approval_file_ptr == NULL) {
+		printf("Eroare la deschiderea fisierului %s\n", approval_file);
+		exit(1);
+	}
+
+	// Set token validity
+	token_validity = arg_token_validity;
+	printf("Server initializat cu succes\n");
+}
 
 request_authorization_ret *
 request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqstp)

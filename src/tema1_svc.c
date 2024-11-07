@@ -78,9 +78,25 @@ tema1_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	return;
 }
 
+extern void initialize_server(char *client_file, char *resource_file, char *approval_file, int token_validity);
+
 int
 main (int argc, char **argv)
 {
+	// Initialize server data
+	if (argc < 5) {
+		printf ("Utilizare: %s <fisier_clienti> <fisier_resurse> <fisier_aprobari> <valabilitate_jetoane> \n", argv[0]);
+		exit (1);
+	}
+
+	char *client_file = argv[1];
+	char *resource_file = argv[2];
+	char *approval_file = argv[3];
+	int token_validity = atoi(argv[4]);
+
+	initialize_server(client_file, resource_file, approval_file, token_validity);
+
+	// Initialize RPC server
 	register SVCXPRT *transp;
 
 	pmap_unset (TEMA1_PROG, TEMA1_VERS);

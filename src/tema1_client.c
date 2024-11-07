@@ -8,7 +8,6 @@
 #include <stdio.h> 
 #include <time.h> 
 #include <rpc/rpc.h> 
-#define RMACHINE "localhost"
 
 
 void
@@ -58,12 +57,15 @@ int
 main (int argc, char *argv[])
 {
 	char *host;
+	char *op_file;
 
-	if (argc < 2) {
-		printf ("usage: %s server_host\n", argv[0]);
+	if (argc < 3) {
+		printf ("Utilizare: %s <adresa_server> <fisier_operatii> \n", argv[0]);
 		exit (1);
 	}
 	host = argv[1];
+	op_file = argv[2];
 	tema1_prog_1 (host);
-exit (0);
+
+	return 0;
 }
