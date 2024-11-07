@@ -5,6 +5,10 @@
  */
 
 #include "tema1.h"
+#include <stdio.h> 
+#include <time.h> 
+#include <rpc/rpc.h> 
+#define RMACHINE "localhost"
 
 
 void

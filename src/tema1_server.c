@@ -5,6 +5,9 @@
  */
 
 #include "tema1.h"
+#include <stdio.h> 
+#include <time.h> 
+#include <rpc/rpc.h> 
 
 request_authorization_ret *
 request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqstp)
