@@ -5,3 +5,4 @@ src/tema1_server
 src/tema1_server.o
 src/tema1_svc.o
 src/tema1_xdr.o
+.vscode

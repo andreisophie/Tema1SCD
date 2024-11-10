@@ -8,10 +8,27 @@
 #include <stdio.h> 
 #include <time.h> 
 #include <rpc/rpc.h>
+#include "token.h"
 
-#define USERID_SIZE 16 
-char **user_ids;
+typedef struct {
+	char *resource;
+	char *permissions;
+} resource_permissions_t;
+
+typedef struct {
+	char *userID;
+	char *auth_token;
+	char *access_token;
+	int availability;
+	char *renew_token;
+	resource_permissions_t *resource_permissions;
+} user_info_t;
+
+#define USERID_SIZE 16
+int users_count = 0;
+user_info_t *user_infos;
 #define STING_SIZE 64
+int resource_count = 0;
 char **resources;
 int token_validity;
 FILE *approval_file_ptr;
@@ -23,12 +40,11 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 		printf("Eroare la deschiderea fisierului %s\n", userid_file);
 		exit(1);
 	}
-	int client_count;
-	fscanf(userid_file_ptr, "%d", &client_count);
-	user_ids = (char **)malloc(client_count * sizeof(char *));
-	for (int i = 0; i < client_count; i++) {
-		user_ids[i] = (char *)malloc(USERID_SIZE * sizeof(char));
-		fscanf(userid_file_ptr, "%s", user_ids[i]);
+	fscanf(userid_file_ptr, "%d", &users_count);
+	user_infos = (user_info_t *)malloc(users_count * sizeof(user_info_t));
+	for (int i = 0; i < users_count; i++) {
+		user_infos[i].userID = (char *)malloc(USERID_SIZE * sizeof(char));
+		fscanf(userid_file_ptr, "%s", user_infos[i]);
 	}
 	fclose(userid_file_ptr);
 
@@ -38,7 +54,7 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 		printf("Eroare la deschiderea fisierului %s\n", resource_file);
 		exit(1);
 	}
-	int resource_count;
+
 	fscanf(resource_file_ptr, "%d", &resource_count);
 	resources = (char **)malloc(resource_count * sizeof(char *));
 	for (int i = 0; i < resource_count; i++) {
@@ -64,10 +80,24 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 {
 	static request_authorization_ret  result;
 
-	/*
-	 * insert server code here
-	 */
+	char *userID = argp->userID;
 
+	// Print message
+	printf("BEGIN %s AUTHZ\n", userID);
+
+	// Check if user exists
+	for (int i = 0; i < users_count; i++) {
+		if (strcmp(user_infos[i].userID, userID) == 0) {
+			result.status = REQUEST_AUTHORIZATION_SUCCESS;
+			char *token = generate_access_token(userID);
+			user_infos[i].auth_token = token;
+			result.auth_token = token;
+			printf("\tRequestToken = %s\n", token);
+			return &result;
+		}
+	}
+	// User not found
+	result.status = REQUEST_AUTHORIZATION_USER_NOT_FOUND;
 	return &result;
 }
 
