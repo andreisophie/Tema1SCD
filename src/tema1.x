@@ -14,6 +14,23 @@ struct request_authorization_ret {
     string auth_token<>;
 };
 
+/* Approve Request Token structs */
+
+struct approve_request_token_arg {
+    string auth_token<>;
+};
+
+enum approve_request_token_status {
+    /* FIXME: Maybe this needs changes? */
+    APPROVE_REQUEST_TOKEN_SUCCESS,
+    APPROVE_REQUEST_TOKEN_REQUEST_DENIED
+};
+
+struct approve_request_token_ret {
+    /* FIXME: Maybe this needs to be changed? */
+    enum approve_request_token_status status;
+};
+
 /* Request Access Token structs */
 
 struct request_access_token_arg {
@@ -61,35 +78,20 @@ struct validate_delegated_action_ret {
     enum validate_delegated_action_status status;
 };
 
-/* Approve Request Token structs */
-
-struct approve_request_token_arg {
-    string auth_token<>;
-};
-
-enum approve_request_token_status {
-    /* FIXME: Maybe this needs changes? */
-    APPROVE_REQUEST_TOKEN_SUCCESS,
-    APPROVE_REQUEST_TOKEN_REQUEST_DENIED
-};
-
-struct approve_request_token_ret {
-    /* FIXME: Maybe this needs to be changed? */
-    enum approve_request_token_status status;
-};
-
 program TEMA1_PROG {
     version TEMA1_VERS {
         /* Request Authorization */
         request_authorization_ret request_authorization(request_authorization_arg) = 1;
 
+        /* Approve Request Token */
+        approve_request_token_ret approve_request_token(approve_request_token_arg) = 2;
+
         /* Request Access Token */
-        request_access_token_ret request_access_token(request_access_token_arg) = 2;
+        request_access_token_ret request_access_token(request_access_token_arg) = 3;
 
         /* Validate Delegated Action */
-        validate_delegated_action_ret validate_delegated_action(validate_delegated_action_arg) = 3;
+        validate_delegated_action_ret validate_delegated_action(validate_delegated_action_arg) = 4;
 
-        /* Approve Request Token */
-        approve_request_token_ret approve_request_token(approve_request_token_arg) = 4;
+        
     } = 1;
 } = 1;

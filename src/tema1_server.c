@@ -11,17 +11,12 @@
 #include "token.h"
 
 typedef struct {
-	char *resource;
-	char *permissions;
-} resource_permissions_t;
-
-typedef struct {
 	char *userID;
 	char *auth_token;
 	char *access_token;
 	int availability;
 	char *renew_token;
-	resource_permissions_t *resource_permissions;
+	char **resource_permissions;
 } user_info_t;
 
 #define USERID_SIZE 16
@@ -44,7 +39,7 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 	user_infos = (user_info_t *)malloc(users_count * sizeof(user_info_t));
 	for (int i = 0; i < users_count; i++) {
 		user_infos[i].userID = (char *)malloc(USERID_SIZE * sizeof(char));
-		fscanf(userid_file_ptr, "%s", user_infos[i]);
+		fscanf(userid_file_ptr, "%s", user_infos[i].userID);
 	}
 	fclose(userid_file_ptr);
 
@@ -101,14 +96,85 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 	return &result;
 }
 
+approve_request_token_ret *
+approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqstp)
+{
+	static approve_request_token_ret  result;
+
+	char *auth_token = argp->auth_token;
+
+	// search for token in db
+	for (int i = 0; i < users_count; i++) {
+		printf("HELLO\n");
+		if (!strcmp(user_infos[i].auth_token, auth_token)) {
+			// Allocate memory for permissions array
+			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
+			// Read each permission from file
+			char *line = NULL;
+			size_t len = 0;
+			getline(&line, &len, approval_file_ptr);
+			// If line is "*,-" then user has no permissions
+			if (strstr(line, "*,-")) {
+				printf("NO PERMISSIONS\n");
+				result.status = APPROVE_REQUEST_TOKEN_REQUEST_DENIED;
+				return &result;
+			}
+			char *resource = strtok(line, ",");
+			char *permissions = strtok(NULL, "\n");
+			do {
+				// Check if resource exists
+				for (int j = 0; j < resource_count; j++) {
+					if (!strcmp(resources[j], resource)) {
+						// Add resource to user
+						user_infos[i].resource_permissions[j]= permissions;
+						break;
+					}
+				}
+				resource = strtok(NULL, ",");
+				permissions = strtok(NULL, "\n");
+			} while (resource != NULL && permissions != NULL);
+
+			// Answer request
+			result.status = APPROVE_REQUEST_TOKEN_SUCCESS;
+			return &result;
+		}
+	}
+	// TODO: Token not found
+
+	return &result;
+}
+
 request_access_token_ret *
 request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp)
 {
 	static request_access_token_ret  result;
 
-	/*
-	 * insert server code here
-	 */
+	char *userID = argp->userID;
+	char *auth_token = argp->auth_token;
+
+	// Search user in db
+	for (int i = 0; i < users_count; i++) {
+		if (!strcmp(userID, user_infos[i].userID)) {
+			// Check if token is valid
+			if (!strcmp(auth_token, user_infos[i].auth_token)) {
+				// Generate access token
+				char *access_token = generate_access_token(auth_token);
+				result.access_token = access_token;
+				// TODO: These don't always need to be generated
+				// result.renew_token = generate_access_token(access_token);
+				// result.availability = token_validity;
+				result.renew_token = (char *)malloc(TOKEN_LEN * sizeof(char));
+				result.status = REQUEST_ACESS_TOKEN_SUCCESS;
+				user_infos[i].access_token = access_token;
+				printf("\tAccessToken = %s\n", access_token);
+				return &result;
+			} else {
+				// Token not valid
+				result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
+				return &result;
+			}
+		}
+	}
 
 	return &result;
 }
@@ -117,18 +183,6 @@ validate_delegated_action_ret *
 validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_req *rqstp)
 {
 	static validate_delegated_action_ret  result;
-
-	/*
-	 * insert server code here
-	 */
-
-	return &result;
-}
-
-approve_request_token_ret *
-approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqstp)
-{
-	static approve_request_token_ret  result;
 
 	/*
 	 * insert server code here

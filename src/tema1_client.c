@@ -44,48 +44,6 @@ void shutdown_client() {
 	fclose(in_file);
 }
 
-void
-tema1_prog_1(char *host)
-{
-	CLIENT *clnt;
-	request_authorization_ret  *result_1;
-	request_authorization_arg  request_authorization_1_arg;
-	request_access_token_ret  *result_2;
-	request_access_token_arg  request_access_token_1_arg;
-	validate_delegated_action_ret  *result_3;
-	validate_delegated_action_arg  validate_delegated_action_1_arg;
-	approve_request_token_ret  *result_4;
-	approve_request_token_arg  approve_request_token_1_arg;
-
-#ifndef	DEBUG
-	clnt = clnt_create (host, TEMA1_PROG, TEMA1_VERS, "udp");
-	if (clnt == NULL) {
-		clnt_pcreateerror (host);
-		exit (1);
-	}
-#endif	/* DEBUG */
-
-	result_1 = request_authorization_1(&request_authorization_1_arg, clnt);
-	if (result_1 == (request_authorization_ret *) NULL) {
-		clnt_perror (clnt, "call failed");
-	}
-	result_2 = request_access_token_1(&request_access_token_1_arg, clnt);
-	if (result_2 == (request_access_token_ret *) NULL) {
-		clnt_perror (clnt, "call failed");
-	}
-	result_3 = validate_delegated_action_1(&validate_delegated_action_1_arg, clnt);
-	if (result_3 == (validate_delegated_action_ret *) NULL) {
-		clnt_perror (clnt, "call failed");
-	}
-	result_4 = approve_request_token_1(&approve_request_token_1_arg, clnt);
-	if (result_4 == (approve_request_token_ret *) NULL) {
-		clnt_perror (clnt, "call failed");
-	}
-#ifndef	DEBUG
-	clnt_destroy (clnt);
-#endif	 /* DEBUG */
-}
-
 void run_client() {
 	char *line = NULL;
 	size_t len = 0;
@@ -101,13 +59,53 @@ void run_client() {
 			request_authorization_arg arg;
 			arg.userID = userID;
 			request_authorization_ret *result = request_authorization_1(&arg, clnt);
+			char *auth_token = result->auth_token;
+			char *access_token = NULL;
+			// treat errors
 			if (result == NULL) {
 				clnt_perror(clnt, "Eroare la apelul RPC request_authorization_1");
+				continue;
+			}
+			if (result->status == REQUEST_AUTHORIZATION_USER_NOT_FOUND) {
+				printf("USER_NOT_FOUND\n");
+				continue;
 			}
 			if (result->status == REQUEST_AUTHORIZATION_SUCCESS) {
-				printf("%s\n", result->auth_token);
+				// next step is to sign the token
+				approve_request_token_arg arg;
+				arg.auth_token = auth_token;
+				approve_request_token_ret *result = approve_request_token_1(&arg, clnt);
+				// treat errors
+				if (result == NULL) {
+					clnt_perror(clnt, "Eroare la apelul RPC approve_request_token_1");
+					continue;
+				}
+				if (result->status == APPROVE_REQUEST_TOKEN_REQUEST_DENIED) {
+					printf("REQUEST_DENIED\n");
+					continue;
+				}
+				if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS) {
+					// Next step is to request the access token
+					request_access_token_arg arg;
+					arg.userID = userID;
+					arg.auth_token = auth_token;
+					request_access_token_ret *result = request_access_token_1(&arg, clnt);
+					// treat errors
+					if (result == NULL) {
+						clnt_perror(clnt, "Eroare la apelul RPC request_access_token_1");
+						continue;
+					}
+					if (result->status == REQUEST_ACESS_TOKEN_REQUEST_DENIED) {
+						printf("REQUEST_DENIED\n");
+						continue;
+					}
+					if (result->status == REQUEST_ACESS_TOKEN_SUCCESS) {
+						access_token = result->access_token;
+						printf("%s -> %s\n", auth_token, access_token);
+					}
+				}
 			} else {
-				printf("USER_NOT_FOUND\n");
+				printf("A avut loc o eroare necunoscuta: Request Authorization\n");
 			}
 		}
 	}

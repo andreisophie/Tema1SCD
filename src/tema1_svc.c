@@ -21,9 +21,9 @@ tema1_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
 		request_authorization_arg request_authorization_1_arg;
+		approve_request_token_arg approve_request_token_1_arg;
 		request_access_token_arg request_access_token_1_arg;
 		validate_delegated_action_arg validate_delegated_action_1_arg;
-		approve_request_token_arg approve_request_token_1_arg;
 	} argument;
 	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -40,6 +40,12 @@ tema1_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		local = (char *(*)(char *, struct svc_req *)) request_authorization_1_svc;
 		break;
 
+	case approve_request_token:
+		_xdr_argument = (xdrproc_t) xdr_approve_request_token_arg;
+		_xdr_result = (xdrproc_t) xdr_approve_request_token_ret;
+		local = (char *(*)(char *, struct svc_req *)) approve_request_token_1_svc;
+		break;
+
 	case request_access_token:
 		_xdr_argument = (xdrproc_t) xdr_request_access_token_arg;
 		_xdr_result = (xdrproc_t) xdr_request_access_token_ret;
@@ -50,12 +56,6 @@ tema1_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_validate_delegated_action_arg;
 		_xdr_result = (xdrproc_t) xdr_validate_delegated_action_ret;
 		local = (char *(*)(char *, struct svc_req *)) validate_delegated_action_1_svc;
-		break;
-
-	case approve_request_token:
-		_xdr_argument = (xdrproc_t) xdr_approve_request_token_arg;
-		_xdr_result = (xdrproc_t) xdr_approve_request_token_ret;
-		local = (char *(*)(char *, struct svc_req *)) approve_request_token_1_svc;
 		break;
 
 	default:

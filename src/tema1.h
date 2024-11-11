@@ -31,6 +31,22 @@ struct request_authorization_ret {
 };
 typedef struct request_authorization_ret request_authorization_ret;
 
+struct approve_request_token_arg {
+	char *auth_token;
+};
+typedef struct approve_request_token_arg approve_request_token_arg;
+
+enum approve_request_token_status {
+	APPROVE_REQUEST_TOKEN_SUCCESS = 0,
+	APPROVE_REQUEST_TOKEN_REQUEST_DENIED = 1,
+};
+typedef enum approve_request_token_status approve_request_token_status;
+
+struct approve_request_token_ret {
+	enum approve_request_token_status status;
+};
+typedef struct approve_request_token_ret approve_request_token_ret;
+
 struct request_access_token_arg {
 	char *userID;
 	char *auth_token;
@@ -81,22 +97,6 @@ struct validate_delegated_action_ret {
 };
 typedef struct validate_delegated_action_ret validate_delegated_action_ret;
 
-struct approve_request_token_arg {
-	char *auth_token;
-};
-typedef struct approve_request_token_arg approve_request_token_arg;
-
-enum approve_request_token_status {
-	APPROVE_REQUEST_TOKEN_SUCCESS = 0,
-	APPROVE_REQUEST_TOKEN_REQUEST_DENIED = 1,
-};
-typedef enum approve_request_token_status approve_request_token_status;
-
-struct approve_request_token_ret {
-	enum approve_request_token_status status;
-};
-typedef struct approve_request_token_ret approve_request_token_ret;
-
 #define TEMA1_PROG 1
 #define TEMA1_VERS 1
 
@@ -104,30 +104,30 @@ typedef struct approve_request_token_ret approve_request_token_ret;
 #define request_authorization 1
 extern  request_authorization_ret * request_authorization_1(request_authorization_arg *, CLIENT *);
 extern  request_authorization_ret * request_authorization_1_svc(request_authorization_arg *, struct svc_req *);
-#define request_access_token 2
-extern  request_access_token_ret * request_access_token_1(request_access_token_arg *, CLIENT *);
-extern  request_access_token_ret * request_access_token_1_svc(request_access_token_arg *, struct svc_req *);
-#define validate_delegated_action 3
-extern  validate_delegated_action_ret * validate_delegated_action_1(validate_delegated_action_arg *, CLIENT *);
-extern  validate_delegated_action_ret * validate_delegated_action_1_svc(validate_delegated_action_arg *, struct svc_req *);
-#define approve_request_token 4
+#define approve_request_token 2
 extern  approve_request_token_ret * approve_request_token_1(approve_request_token_arg *, CLIENT *);
 extern  approve_request_token_ret * approve_request_token_1_svc(approve_request_token_arg *, struct svc_req *);
+#define request_access_token 3
+extern  request_access_token_ret * request_access_token_1(request_access_token_arg *, CLIENT *);
+extern  request_access_token_ret * request_access_token_1_svc(request_access_token_arg *, struct svc_req *);
+#define validate_delegated_action 4
+extern  validate_delegated_action_ret * validate_delegated_action_1(validate_delegated_action_arg *, CLIENT *);
+extern  validate_delegated_action_ret * validate_delegated_action_1_svc(validate_delegated_action_arg *, struct svc_req *);
 extern int tema1_prog_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
 #define request_authorization 1
 extern  request_authorization_ret * request_authorization_1();
 extern  request_authorization_ret * request_authorization_1_svc();
-#define request_access_token 2
-extern  request_access_token_ret * request_access_token_1();
-extern  request_access_token_ret * request_access_token_1_svc();
-#define validate_delegated_action 3
-extern  validate_delegated_action_ret * validate_delegated_action_1();
-extern  validate_delegated_action_ret * validate_delegated_action_1_svc();
-#define approve_request_token 4
+#define approve_request_token 2
 extern  approve_request_token_ret * approve_request_token_1();
 extern  approve_request_token_ret * approve_request_token_1_svc();
+#define request_access_token 3
+extern  request_access_token_ret * request_access_token_1();
+extern  request_access_token_ret * request_access_token_1_svc();
+#define validate_delegated_action 4
+extern  validate_delegated_action_ret * validate_delegated_action_1();
+extern  validate_delegated_action_ret * validate_delegated_action_1_svc();
 extern int tema1_prog_1_freeresult ();
 #endif /* K&R C */
 
@@ -137,6 +137,9 @@ extern int tema1_prog_1_freeresult ();
 extern  bool_t xdr_request_authorization_arg (XDR *, request_authorization_arg*);
 extern  bool_t xdr_request_authorization_status (XDR *, request_authorization_status*);
 extern  bool_t xdr_request_authorization_ret (XDR *, request_authorization_ret*);
+extern  bool_t xdr_approve_request_token_arg (XDR *, approve_request_token_arg*);
+extern  bool_t xdr_approve_request_token_status (XDR *, approve_request_token_status*);
+extern  bool_t xdr_approve_request_token_ret (XDR *, approve_request_token_ret*);
 extern  bool_t xdr_request_access_token_arg (XDR *, request_access_token_arg*);
 extern  bool_t xdr_request_access_token_status (XDR *, request_access_token_status*);
 extern  bool_t xdr_request_access_token_ret (XDR *, request_access_token_ret*);
@@ -144,14 +147,14 @@ extern  bool_t xdr_operation_type (XDR *, operation_type*);
 extern  bool_t xdr_validate_delegated_action_arg (XDR *, validate_delegated_action_arg*);
 extern  bool_t xdr_validate_delegated_action_status (XDR *, validate_delegated_action_status*);
 extern  bool_t xdr_validate_delegated_action_ret (XDR *, validate_delegated_action_ret*);
-extern  bool_t xdr_approve_request_token_arg (XDR *, approve_request_token_arg*);
-extern  bool_t xdr_approve_request_token_status (XDR *, approve_request_token_status*);
-extern  bool_t xdr_approve_request_token_ret (XDR *, approve_request_token_ret*);
 
 #else /* K&R C */
 extern bool_t xdr_request_authorization_arg ();
 extern bool_t xdr_request_authorization_status ();
 extern bool_t xdr_request_authorization_ret ();
+extern bool_t xdr_approve_request_token_arg ();
+extern bool_t xdr_approve_request_token_status ();
+extern bool_t xdr_approve_request_token_ret ();
 extern bool_t xdr_request_access_token_arg ();
 extern bool_t xdr_request_access_token_status ();
 extern bool_t xdr_request_access_token_ret ();
@@ -159,9 +162,6 @@ extern bool_t xdr_operation_type ();
 extern bool_t xdr_validate_delegated_action_arg ();
 extern bool_t xdr_validate_delegated_action_status ();
 extern bool_t xdr_validate_delegated_action_ret ();
-extern bool_t xdr_approve_request_token_arg ();
-extern bool_t xdr_approve_request_token_status ();
-extern bool_t xdr_approve_request_token_ret ();
 
 #endif /* K&R C */
 

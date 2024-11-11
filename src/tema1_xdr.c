@@ -38,6 +38,36 @@ xdr_request_authorization_ret (XDR *xdrs, request_authorization_ret *objp)
 }
 
 bool_t
+xdr_approve_request_token_arg (XDR *xdrs, approve_request_token_arg *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->auth_token, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_approve_request_token_status (XDR *xdrs, approve_request_token_status *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_enum (xdrs, (enum_t *) objp))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_approve_request_token_ret (XDR *xdrs, approve_request_token_ret *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_approve_request_token_status (xdrs, &objp->status))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
 xdr_request_access_token_arg (XDR *xdrs, request_access_token_arg *objp)
 {
 	register int32_t *buf;
@@ -115,36 +145,6 @@ xdr_validate_delegated_action_ret (XDR *xdrs, validate_delegated_action_ret *obj
 	register int32_t *buf;
 
 	 if (!xdr_validate_delegated_action_status (xdrs, &objp->status))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_approve_request_token_arg (XDR *xdrs, approve_request_token_arg *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_string (xdrs, &objp->auth_token, ~0))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_approve_request_token_status (XDR *xdrs, approve_request_token_status *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_enum (xdrs, (enum_t *) objp))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_approve_request_token_ret (XDR *xdrs, approve_request_token_ret *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_approve_request_token_status (xdrs, &objp->status))
 		 return FALSE;
 	return TRUE;
 }

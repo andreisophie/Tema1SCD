@@ -24,6 +24,21 @@ request_authorization_1(request_authorization_arg *argp, CLIENT *clnt)
 	return (&clnt_res);
 }
 
+approve_request_token_ret *
+approve_request_token_1(approve_request_token_arg *argp, CLIENT *clnt)
+{
+	static approve_request_token_ret clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, approve_request_token,
+		(xdrproc_t) xdr_approve_request_token_arg, (caddr_t) argp,
+		(xdrproc_t) xdr_approve_request_token_ret, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
+}
+
 request_access_token_ret *
 request_access_token_1(request_access_token_arg *argp, CLIENT *clnt)
 {
@@ -48,21 +63,6 @@ validate_delegated_action_1(validate_delegated_action_arg *argp, CLIENT *clnt)
 	if (clnt_call (clnt, validate_delegated_action,
 		(xdrproc_t) xdr_validate_delegated_action_arg, (caddr_t) argp,
 		(xdrproc_t) xdr_validate_delegated_action_ret, (caddr_t) &clnt_res,
-		TIMEOUT) != RPC_SUCCESS) {
-		return (NULL);
-	}
-	return (&clnt_res);
-}
-
-approve_request_token_ret *
-approve_request_token_1(approve_request_token_arg *argp, CLIENT *clnt)
-{
-	static approve_request_token_ret clnt_res;
-
-	memset((char *)&clnt_res, 0, sizeof(clnt_res));
-	if (clnt_call (clnt, approve_request_token,
-		(xdrproc_t) xdr_approve_request_token_arg, (caddr_t) argp,
-		(xdrproc_t) xdr_approve_request_token_ret, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
