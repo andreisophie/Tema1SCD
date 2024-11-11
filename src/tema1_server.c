@@ -110,18 +110,17 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 			continue;
 		}
 		if (!strcmp(user_infos[i].auth_token, auth_token)) {
-			// Allocate memory for permissions array
-			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
 			// Read each permission from file
 			char *line = NULL;
 			size_t len = 0;
 			getline(&line, &len, approval_file_ptr);
 			// If line is "*,-" then user has no permissions
 			if (strstr(line, "*,-")) {
-				printf("NO PERMISSIONS\n");
-				result.status = APPROVE_REQUEST_TOKEN_REQUEST_DENIED;
+				result.status = APPROVE_REQUEST_TOKEN_SUCCESS;
 				return &result;
 			}
+			// Allocate memory for permissions array
+			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
 			char *resource = strtok(line, ",");
 			char *permissions = strtok(NULL, "\n");
 			do {
@@ -142,8 +141,8 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 			return &result;
 		}
 	}
-	// TODO: Token not found
-
+	// Token not found
+	result.status = APPROVE_REQUEST_TOKEN_ERROR;
 	return &result;
 }
 
@@ -159,7 +158,16 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 	for (int i = 0; i < users_count; i++) {
 		if (!strcmp(userID, user_infos[i].userID)) {
 			// Check if token is valid
+			if (user_infos[i].auth_token == NULL) {
+				result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
+				return &result;
+			}
 			if (!strcmp(auth_token, user_infos[i].auth_token)) {
+				// Check if user has signed the token
+				if (user_infos[i].resource_permissions == NULL) {
+					result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
+					return &result;
+				}
 				// Generate access token
 				char *access_token = generate_access_token(auth_token);
 				result.access_token = access_token;

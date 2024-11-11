@@ -38,7 +38,7 @@ typedef struct approve_request_token_arg approve_request_token_arg;
 
 enum approve_request_token_status {
 	APPROVE_REQUEST_TOKEN_SUCCESS = 0,
-	APPROVE_REQUEST_TOKEN_REQUEST_DENIED = 1,
+	APPROVE_REQUEST_TOKEN_ERROR = 1,
 };
 typedef enum approve_request_token_status approve_request_token_status;
 

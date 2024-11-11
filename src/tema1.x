@@ -21,13 +21,11 @@ struct approve_request_token_arg {
 };
 
 enum approve_request_token_status {
-    /* FIXME: Maybe this needs changes? */
     APPROVE_REQUEST_TOKEN_SUCCESS,
-    APPROVE_REQUEST_TOKEN_REQUEST_DENIED
+    APPROVE_REQUEST_TOKEN_ERROR
 };
 
 struct approve_request_token_ret {
-    /* FIXME: Maybe this needs to be changed? */
     enum approve_request_token_status status;
 };
 

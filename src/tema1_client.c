@@ -56,6 +56,7 @@ void run_client() {
 		resource = strtok(NULL, "\n");
 
 		if (!strcmp(action, REQUEST)) {
+			int refresh_token = atoi(resource);
 			request_authorization_arg arg;
 			arg.userID = userID;
 			request_authorization_ret *result = request_authorization_1(&arg, clnt);
@@ -80,10 +81,6 @@ void run_client() {
 					clnt_perror(clnt, "Eroare la apelul RPC approve_request_token_1");
 					continue;
 				}
-				if (result->status == APPROVE_REQUEST_TOKEN_REQUEST_DENIED) {
-					printf("REQUEST_DENIED\n");
-					continue;
-				}
 				if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS) {
 					// Next step is to request the access token
 					request_access_token_arg arg;
@@ -103,6 +100,8 @@ void run_client() {
 						access_token = result->access_token;
 						printf("%s -> %s\n", auth_token, access_token);
 					}
+				} else {
+					printf("A avut loc o eroare necunoscuta: Approve Request Token\n");
 				}
 			} else {
 				printf("A avut loc o eroare necunoscuta: Request Authorization\n");
