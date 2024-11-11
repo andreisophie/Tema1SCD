@@ -105,7 +105,10 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 
 	// search for token in db
 	for (int i = 0; i < users_count; i++) {
-		printf("HELLO\n");
+		// Some users might not have a token assigned
+		if (user_infos[i].auth_token == NULL) {
+			continue;
+		}
 		if (!strcmp(user_infos[i].auth_token, auth_token)) {
 			// Allocate memory for permissions array
 			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
