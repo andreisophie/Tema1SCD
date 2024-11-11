@@ -50,16 +50,8 @@ struct request_access_token_ret {
 
 /* Validate Delegated Action structs */
 
-enum operation_type {
-    READ,
-    INSERT,
-    MODIFY,
-    DELETE,
-    EXECUTE
-};
-
 struct validate_delegated_action_arg {
-    enum operation_type op_type;
+    string op_type<>;
     string resource<>;
     string access_token<>;
 };

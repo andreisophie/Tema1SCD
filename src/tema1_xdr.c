@@ -106,21 +106,11 @@ xdr_request_access_token_ret (XDR *xdrs, request_access_token_ret *objp)
 }
 
 bool_t
-xdr_operation_type (XDR *xdrs, operation_type *objp)
-{
-	register int32_t *buf;
-
-	 if (!xdr_enum (xdrs, (enum_t *) objp))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
 xdr_validate_delegated_action_arg (XDR *xdrs, validate_delegated_action_arg *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_operation_type (xdrs, &objp->op_type))
+	 if (!xdr_string (xdrs, &objp->op_type, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->resource, ~0))
 		 return FALSE;

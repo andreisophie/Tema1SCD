@@ -44,68 +44,134 @@ void shutdown_client() {
 	fclose(in_file);
 }
 
+typedef struct {
+	char *userID;
+	char *auth_token;
+	char *access_token;
+	char *renew_token;
+} user_tokens_t;
+
+user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens, int registered_users, char *userID) {
+	for (int i = 0; i < registered_users; i++) {
+		if (!strcmp(user_tokens[i].userID, userID)) {
+			return &user_tokens[i];
+		}
+	}
+	return NULL;
+}
+
 void run_client() {
 	char *line = NULL;
 	size_t len = 0;
 	char *userID;
 	char *action;
 	char *resource;
+	int registered_users = 0;
+	user_tokens_t *user_tokens = NULL;
 	while (getline(&line, &len, in_file) != -1) {
 		userID = strtok(line, ",");
 		action = strtok(NULL, ",");
 		resource = strtok(NULL, "\n");
-
 		if (!strcmp(action, REQUEST)) {
-			int refresh_token = atoi(resource);
+			// register user in client-side database
+			user_tokens = (user_tokens_t *)realloc(user_tokens, (registered_users + 1) * sizeof(user_tokens_t));
+			registered_users++;
+			user_tokens_t *current_user = &user_tokens[registered_users - 1];
+			current_user->userID = userID;
 			request_authorization_arg arg;
 			arg.userID = userID;
 			request_authorization_ret *result = request_authorization_1(&arg, clnt);
-			char *auth_token = result->auth_token;
-			char *access_token = NULL;
 			// treat errors
 			if (result == NULL) {
 				clnt_perror(clnt, "Eroare la apelul RPC request_authorization_1");
 				continue;
 			}
-			if (result->status == REQUEST_AUTHORIZATION_USER_NOT_FOUND) {
-				printf("USER_NOT_FOUND\n");
-				continue;
-			}
-			if (result->status == REQUEST_AUTHORIZATION_SUCCESS) {
-				// next step is to sign the token
-				approve_request_token_arg arg;
-				arg.auth_token = auth_token;
-				approve_request_token_ret *result = approve_request_token_1(&arg, clnt);
-				// treat errors
-				if (result == NULL) {
-					clnt_perror(clnt, "Eroare la apelul RPC approve_request_token_1");
-					continue;
-				}
-				if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS) {
-					// Next step is to request the access token
-					request_access_token_arg arg;
-					arg.userID = userID;
-					arg.auth_token = auth_token;
-					request_access_token_ret *result = request_access_token_1(&arg, clnt);
+			switch (result->status) {
+				case REQUEST_AUTHORIZATION_SUCCESS:
+					current_user->auth_token = result->auth_token;
+					// TODO: Split this code into multiple functions
+					// next step is to sign the token
+					approve_request_token_arg arg;
+					arg.auth_token = current_user->auth_token;
+					approve_request_token_ret *result = approve_request_token_1(&arg, clnt);
 					// treat errors
 					if (result == NULL) {
-						clnt_perror(clnt, "Eroare la apelul RPC request_access_token_1");
+						clnt_perror(clnt, "Eroare la apelul RPC approve_request_token_1");
 						continue;
 					}
-					if (result->status == REQUEST_ACESS_TOKEN_REQUEST_DENIED) {
-						printf("REQUEST_DENIED\n");
-						continue;
+					if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS) {
+						// Next step is to request the access token
+						request_access_token_arg arg;
+						arg.userID = userID;
+						arg.auth_token = current_user->auth_token;
+						request_access_token_ret *result = request_access_token_1(&arg, clnt);
+						// treat errors
+						if (result == NULL) {
+							clnt_perror(clnt, "Eroare la apelul RPC request_access_token_1");
+							continue;
+						}
+						switch (result->status) {
+							case REQUEST_ACESS_TOKEN_REQUEST_DENIED:
+								printf("REQUEST_DENIED\n");
+								continue;
+							case REQUEST_ACESS_TOKEN_SUCCESS:
+								current_user->access_token = result->access_token;
+								user_tokens[registered_users - 1].access_token = current_user->access_token;
+								printf("%s -> %s\n", current_user->auth_token, current_user->access_token);
+								break;
+							default:
+								printf("A avut loc o eroare necunoscuta: Request Access Token\n");
+								continue;
+						}
+					} else {
+						printf("A avut loc o eroare necunoscuta: Approve Request Token\n");
 					}
-					if (result->status == REQUEST_ACESS_TOKEN_SUCCESS) {
-						access_token = result->access_token;
-						printf("%s -> %s\n", auth_token, access_token);
-					}
-				} else {
-					printf("A avut loc o eroare necunoscuta: Approve Request Token\n");
-				}
-			} else {
-				printf("A avut loc o eroare necunoscuta: Request Authorization\n");
+					break;
+				case REQUEST_AUTHORIZATION_USER_NOT_FOUND:
+					printf("USER_NOT_FOUND\n");
+					continue;
+				default:
+					printf("A avut loc o eroare necunoscuta: Request Authorization\n");
+					continue;
 			}
+		} else {
+			// if action is not REQUEST, then it is one of RIMDX
+			validate_delegated_action_arg arg;
+			arg.op_type = action;
+			arg.resource = resource;
+			user_tokens_t *user = find_user_by_ID(user_tokens, registered_users, userID);
+			if (user == NULL) {
+				arg.access_token = strdup("\0");
+			} else {
+				arg.access_token = user->access_token;
+			}
+			validate_delegated_action_ret *result = validate_delegated_action_1(&arg, clnt);
+			// treat errors
+			if (result == NULL) {
+				clnt_perror(clnt, "Eroare la apelul RPC validate_delegated_action_1");
+				continue;
+			}
+			switch (result->status) {
+				case VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED:
+					printf("PERMISSION_GRANTED\n");
+					break;
+				case VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED:
+					printf("PERMISSION_DENIED\n");
+					break;
+				case VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED:
+					printf("TOKEN_EXPIRED\n");
+					break;
+				case VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND:
+					printf("RESOURCE_NOT_FOUND\n");
+					break;
+				case VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED:
+					printf("OPERATION_NOT_PERMITTED\n");
+					break;
+				default:
+					printf("A avut loc o eroare necunoscuta: Validate Delegated Action\n");
+					break;
+			}
+
 		}
 	}
 	

@@ -67,17 +67,8 @@ struct request_access_token_ret {
 };
 typedef struct request_access_token_ret request_access_token_ret;
 
-enum operation_type {
-	READ = 0,
-	INSERT = 1,
-	MODIFY = 2,
-	DELETE = 3,
-	EXECUTE = 4,
-};
-typedef enum operation_type operation_type;
-
 struct validate_delegated_action_arg {
-	enum operation_type op_type;
+	char *op_type;
 	char *resource;
 	char *access_token;
 };
@@ -143,7 +134,6 @@ extern  bool_t xdr_approve_request_token_ret (XDR *, approve_request_token_ret*)
 extern  bool_t xdr_request_access_token_arg (XDR *, request_access_token_arg*);
 extern  bool_t xdr_request_access_token_status (XDR *, request_access_token_status*);
 extern  bool_t xdr_request_access_token_ret (XDR *, request_access_token_ret*);
-extern  bool_t xdr_operation_type (XDR *, operation_type*);
 extern  bool_t xdr_validate_delegated_action_arg (XDR *, validate_delegated_action_arg*);
 extern  bool_t xdr_validate_delegated_action_status (XDR *, validate_delegated_action_status*);
 extern  bool_t xdr_validate_delegated_action_ret (XDR *, validate_delegated_action_ret*);
@@ -158,7 +148,6 @@ extern bool_t xdr_approve_request_token_ret ();
 extern bool_t xdr_request_access_token_arg ();
 extern bool_t xdr_request_access_token_status ();
 extern bool_t xdr_request_access_token_ret ();
-extern bool_t xdr_operation_type ();
 extern bool_t xdr_validate_delegated_action_arg ();
 extern bool_t xdr_validate_delegated_action_status ();
 extern bool_t xdr_validate_delegated_action_ret ();

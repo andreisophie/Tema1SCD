@@ -67,7 +67,7 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 
 	// Set token validity
 	token_validity = arg_token_validity;
-	printf("Server initializat cu succes\n");
+	printf("Server initializat cu succes\n\n");
 }
 
 request_authorization_ret *
@@ -96,6 +96,16 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 	return &result;
 }
 
+// Trim training newline character in-place
+void trim_string(char *str) {
+	int len = strlen(str);
+
+	// Remove trailing newline
+	if (str[len - 1] == '\n') {
+		str[len - 1] = '\0';
+	}
+}
+
 approve_request_token_ret *
 approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqstp)
 {
@@ -121,8 +131,11 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 			}
 			// Allocate memory for permissions array
 			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
+			printf("Reading permissions:\n");
 			char *resource = strtok(line, ",");
-			char *permissions = strtok(NULL, "\n");
+			char *permissions = strtok(NULL, ",");
+			// trim newline
+			trim_string(permissions);
 			do {
 				// Check if resource exists
 				for (int j = 0; j < resource_count; j++) {
@@ -132,8 +145,13 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 						break;
 					}
 				}
+				printf("%s - %s\n", resource, permissions);
 				resource = strtok(NULL, ",");
-				permissions = strtok(NULL, "\n");
+				if (resource == NULL) {
+					break;
+				}
+				permissions = strtok(NULL, ",");
+				trim_string(permissions);
 			} while (resource != NULL && permissions != NULL);
 
 			// Answer request
@@ -195,9 +213,56 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 {
 	static validate_delegated_action_ret  result;
 
-	/*
-	 * insert server code here
-	 */
+	char *resource = argp->resource;
+	char *access_token = argp->access_token;
+	char* op_type = argp->op_type;
 
+	// Check if request has access token
+	if (access_token == NULL) {
+		printf("DENY (%s,%s,,0)\n", op_type, resource);
+		result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
+		return &result;
+	}
+
+	// Search for user
+	for (int i = 0; i < users_count; i++) {
+		if (user_infos[i].access_token == NULL) {
+			continue;
+		}
+		if (!strcmp(user_infos[i].access_token, access_token)) {
+			// Check if user has permission
+			// Note: If user has an access token, then his auth token must have been already signed
+			for (int j = 0; j < resource_count; j++) {
+				if (!strcmp(resources[j], resource)) {
+					if (user_infos[i].resource_permissions[j] == NULL) {
+						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
+						return &result;
+					}
+					// Check if user has permission
+					char op_type_chr;
+					if (op_type[0] == 'E') {
+						op_type_chr = 'X';
+					} else {
+						op_type_chr = op_type[0];
+					}
+					if (strchr(user_infos[i].resource_permissions[j], op_type_chr)) {
+						printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED;
+						return &result;
+					} else {
+						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
+						return &result;
+					}
+				}
+			}
+			result.status = VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND;
+			return &result;
+		}
+	}
+
+	printf("DENY (%s,%s,,0)\n", op_type, resource);
+	result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
 	return &result;
 }
