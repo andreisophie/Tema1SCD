@@ -50,6 +50,7 @@ typedef struct approve_request_token_ret approve_request_token_ret;
 struct request_access_token_arg {
 	char *userID;
 	char *auth_token;
+	int automatically_refresh_token;
 };
 typedef struct request_access_token_arg request_access_token_arg;
 

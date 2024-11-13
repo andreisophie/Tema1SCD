@@ -73,6 +73,7 @@ void call_request_access_token(user_tokens_t *current_user)
 	request_access_token_arg arg;
 	arg.userID = current_user->userID;
 	arg.auth_token = current_user->auth_token;
+	arg.automatically_refresh_token = current_user->automatically_refresh_token;
 	request_access_token_ret *result = request_access_token_1(&arg, clnt);
 	// treat errors
 	if (result == NULL)
@@ -87,13 +88,20 @@ void call_request_access_token(user_tokens_t *current_user)
 		return;
 	case REQUEST_ACESS_TOKEN_SUCCESS:
 		current_user->access_token = result->access_token;
-		printf("%s -> %s\n", current_user->auth_token, current_user->access_token);
+		if (current_user->automatically_refresh_token)
+		{
+			printf("%s -> %s, %s\n", current_user->auth_token, current_user->access_token, result->renew_token);
+			current_user->auth_token = result->renew_token;
+		}
+		else
+		{
+			printf("%s -> %s\n", current_user->auth_token, current_user->access_token);
+		}
 		break;
 	default:
 		printf("A avut loc o eroare necunoscuta: Request Access Token\n");
 		return;
 	}
-	return 0;
 }
 
 void call_approve_request_token(user_tokens_t *current_user)
@@ -118,7 +126,7 @@ void call_approve_request_token(user_tokens_t *current_user)
 	}
 }
 
-int call_request_authorization(user_tokens_t *current_user)
+void call_request_authorization(user_tokens_t *current_user)
 {
 	request_authorization_arg arg;
 	arg.userID = current_user->userID;
@@ -147,7 +155,7 @@ int call_request_authorization(user_tokens_t *current_user)
 void run_request_action(user_tokens_t *current_user, int automatically_refresh_token)
 {
 	current_user->automatically_refresh_token = automatically_refresh_token;
-	int ret = call_request_authorization(current_user);
+	call_request_authorization(current_user);
 }
 
 void run_resource_action(user_tokens_t *current_user, char *action, char *resource)

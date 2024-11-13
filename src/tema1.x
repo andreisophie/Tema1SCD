@@ -34,6 +34,7 @@ struct approve_request_token_ret {
 struct request_access_token_arg {
     string userID<>;
     string auth_token<>;
+    int automatically_refresh_token;
 };
 
 enum request_access_token_status {

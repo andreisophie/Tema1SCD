@@ -16,6 +16,7 @@ typedef struct
 	char *auth_token;
 	char *access_token;
 	int availability;
+	int automatically_refresh_token;
 	char **resource_permissions;
 } user_info_t;
 
@@ -89,8 +90,14 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 	// Check if user exists
 	for (int i = 0; i < users_count; i++)
 	{
-		if (strcmp(user_infos[i].userID, userID) == 0)
+		if (!strcmp(user_infos[i].userID, userID))
 		{
+			// First of all, empty all previous tokens
+			user_infos[i].auth_token = NULL;
+			user_infos[i].access_token = NULL;
+			user_infos[i].availability = 0;
+			user_infos->automatically_refresh_token = 0;
+			// Then generate the new token
 			result.status = REQUEST_AUTHORIZATION_SUCCESS;
 			char *token = generate_access_token(userID);
 			user_infos[i].auth_token = token;
@@ -187,6 +194,7 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 
 	char *userID = argp->userID;
 	char *auth_token = argp->auth_token;
+	int automatically_refresh_token = argp->automatically_refresh_token;
 
 	// Search user in db
 	for (int i = 0; i < users_count; i++)
@@ -199,6 +207,11 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
 				return &result;
 			}
+			// If user struct has automatically refresh token set, then this request is a refresh
+			if (user_infos[i].automatically_refresh_token)
+			{
+				printf("BEGIN %s AUTHZ REFRESH\n", userID);
+			}
 			if (!strcmp(auth_token, user_infos[i].auth_token))
 			{
 				// Check if user has signed the token
@@ -210,14 +223,23 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				// Generate access token
 				char *access_token = generate_access_token(auth_token);
 				result.access_token = access_token;
-				// TODO: These don't always need to be generated
-				// result.renew_token = generate_access_token(access_token);
-				// result.availability = global_token_availability;
-				result.renew_token = (char *)malloc(TOKEN_LEN * sizeof(char));
+				if (automatically_refresh_token)
+				{
+					result.renew_token = generate_access_token(access_token);
+				}
+				else
+				{
+					result.renew_token = (char *)malloc(1);
+				}
+				result.availability = global_token_availability;
 				result.status = REQUEST_ACESS_TOKEN_SUCCESS;
 				user_infos[i].access_token = access_token;
 				user_infos[i].availability = global_token_availability;
 				printf("\tAccessToken = %s\n", access_token);
+				if (automatically_refresh_token)
+				{
+					printf("\tRefreshToken = %s\n", result.renew_token);
+				}
 				return &result;
 			}
 			else

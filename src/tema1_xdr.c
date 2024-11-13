@@ -76,6 +76,8 @@ xdr_request_access_token_arg (XDR *xdrs, request_access_token_arg *objp)
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->auth_token, ~0))
 		 return FALSE;
+	 if (!xdr_int (xdrs, &objp->automatically_refresh_token))
+		 return FALSE;
 	return TRUE;
 }
 
