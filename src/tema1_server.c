@@ -131,7 +131,6 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 			}
 			// Allocate memory for permissions array
 			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
-			printf("Reading permissions:\n");
 			char *resource = strtok(line, ",");
 			char *permissions = strtok(NULL, ",");
 			// trim newline
@@ -145,7 +144,6 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 						break;
 					}
 				}
-				printf("%s - %s\n", resource, permissions);
 				resource = strtok(NULL, ",");
 				if (resource == NULL) {
 					break;
