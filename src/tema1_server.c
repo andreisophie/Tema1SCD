@@ -105,7 +105,7 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 	return &result;
 }
 
-// Trim training newline character in-place
+// Trim trailing newline character in-place
 void trim_string(char *str)
 {
 	int len = strlen(str);
@@ -259,8 +259,18 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 		}
 		if (!strcmp(user_infos[i].access_token, access_token))
 		{
+			// First of all, check if token is expired
+			if (user_infos[i].availability == 0)
+			{
+				printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+				result.status = VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED;
+				return &result;
+			}
+			// If still available, decrement availability
+			user_infos[i].availability--;
 			// Check if user has permission
-			// Note: If user has an access token, then his auth token must have been already signed
+			// Note: If user has an access token, then his auth token must have been already signed,
+			//       so resource_permissions is initialized
 			for (int j = 0; j < resource_count; j++)
 			{
 				if (!strcmp(resources[j], resource))
@@ -283,26 +293,12 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 					}
 					if (strchr(user_infos[i].resource_permissions[j], op_type_chr))
 					{
-						if (user_infos[i].availability == 0)
-						{
-							printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
-							result.status = VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED;
-							return &result;
-						}
-						user_infos[i].availability--;
 						printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED;
 						return &result;
 					}
 					else
 					{
-						if (user_infos[i].availability == 0)
-						{
-							printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
-							result.status = VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED;
-							return &result;
-						}
-						user_infos[i].availability--;
 						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
 						return &result;
