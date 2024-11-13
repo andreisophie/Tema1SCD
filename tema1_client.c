@@ -92,7 +92,7 @@ void call_request_access_token(user_tokens_t *current_user)
 		current_user->token_availability = result->availability;
 		if (current_user->automatically_refresh_token)
 		{
-			printf("%s -> %s, %s\n", current_user->auth_token, current_user->access_token, result->renew_token);
+			printf("%s -> %s,%s\n", current_user->auth_token, current_user->access_token, result->renew_token);
 			current_user->auth_token = strdup(result->renew_token);
 		}
 		else

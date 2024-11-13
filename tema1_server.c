@@ -74,7 +74,6 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 
 	// Set token validity
 	global_token_availability = arg_token_validity;
-	printf("Server initializat cu succes\n\n");
 }
 
 request_authorization_ret *
@@ -103,7 +102,8 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 			char *token = generate_access_token(userID);
 			user_infos[i].auth_token = token;
 			result.auth_token = token;
-			printf("\tRequestToken = %s\n", token);
+			printf("  RequestToken = %s\n", token);
+			fflush(stdout);
 			return &result;
 		}
 	}
@@ -231,12 +231,13 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				result.status = REQUEST_ACESS_TOKEN_SUCCESS;
 				user_infos[i].access_token = access_token;
 				user_infos[i].availability = global_token_availability;
-				printf("\tAccessToken = %s\n", access_token);
+				printf("  AccessToken = %s\n", access_token);
 				if (automatically_refresh_token)
 				{
-					printf("\tRefreshToken = %s\n", result.renew_token);
+					printf("  RefreshToken = %s\n", result.renew_token);
 					user_infos[i].auth_token = result.renew_token;
 				}
+				fflush(stdout);
 				return &result;
 			}
 			else
@@ -289,8 +290,9 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 				user_infos[i].access_token = access_token;
 				user_infos[i].availability = global_token_availability;
 				user_infos[i].auth_token = result.renew_token;
-				printf("\tAccessToken = %s\n", access_token);
-				printf("\tRefreshToken = %s\n", result.renew_token);
+				printf("  AccessToken = %s\n", access_token);
+				printf("  RefreshToken = %s\n", result.renew_token);
+				fflush(stdout);
 				return &result;
 			}
 			else
@@ -319,6 +321,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 	{
 		printf("DENY (%s,%s,,0)\n", op_type, resource);
 		result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
+		fflush(stdout);
 		return &result;
 	}
 
@@ -334,8 +337,9 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 			// First of all, check if token is expired
 			if (user_infos[i].availability == 0)
 			{
-				printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+				printf("DENY (%s,%s,,%d)\n", op_type, resource, user_infos[i].availability);
 				result.status = VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED;
+				fflush(stdout);
 				return &result;
 			}
 			// If still available, decrement availability
@@ -351,6 +355,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 					{
 						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
+						fflush(stdout);
 						return &result;
 					}
 					// Check if user has permission
@@ -367,18 +372,21 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 					{
 						printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED;
+						fflush(stdout);
 						return &result;
 					}
 					else
 					{
 						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
+						fflush(stdout);
 						return &result;
 					}
 				}
 			}
 			result.status = VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND;
 			printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+			fflush(stdout);
 			return &result;
 		}
 	}
