@@ -207,11 +207,6 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
 				return &result;
 			}
-			// If user struct has automatically refresh token set, then this request is a refresh
-			if (user_infos[i].automatically_refresh_token)
-			{
-				printf("BEGIN %s AUTHZ REFRESH\n", userID);
-			}
 			if (!strcmp(auth_token, user_infos[i].auth_token))
 			{
 				// Check if user has signed the token
@@ -239,6 +234,7 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				if (automatically_refresh_token)
 				{
 					printf("\tRefreshToken = %s\n", result.renew_token);
+					user_infos[i].auth_token = result.renew_token;
 				}
 				return &result;
 			}
@@ -259,9 +255,51 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 {
 	static refresh_access_token_ret  result;
 
-	/*
-	 * insert server code here
-	 */
+	char *userID = argp->userID;
+	char *renew_token = argp->renew_token;
+
+	// Search for user in db
+	// Search user in db
+	for (int i = 0; i < users_count; i++)
+	{
+		if (!strcmp(userID, user_infos[i].userID))
+		{
+			// Check if token is valid
+			if (user_infos[i].auth_token == NULL)
+			{
+				result.status = REFRESH_ACESS_TOKEN_ERROR;
+				return &result;
+			}
+			if (!strcmp(renew_token, user_infos[i].auth_token))
+			{
+				// Check if user has signed the token
+				if (user_infos[i].resource_permissions == NULL)
+				{
+					result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
+					return &result;
+				}
+				// Generate access token
+				printf("BEGIN %s AUTHZ REFRESH\n", userID);
+				char *access_token = generate_access_token(renew_token);
+				result.access_token = access_token;
+				result.renew_token = generate_access_token(access_token);
+				result.availability = global_token_availability;
+				result.status = REFRESH_ACESS_TOKEN_SUCCESS;
+				user_infos[i].access_token = access_token;
+				user_infos[i].availability = global_token_availability;
+				user_infos[i].auth_token = result.renew_token;
+				printf("\tAccessToken = %s\n", access_token);
+				printf("\tRefreshToken = %s\n", result.renew_token);
+				return &result;
+			}
+			else
+			{
+				// Token not valid
+				result.status = REFRESH_ACESS_TOKEN_ERROR;
+				return &result;
+			}
+		}
+	}
 
 	return &result;
 }

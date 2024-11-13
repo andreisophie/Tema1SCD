@@ -54,6 +54,7 @@ typedef struct
 	char *auth_token;
 	char *access_token;
 	int automatically_refresh_token;
+	int token_availability;
 } user_tokens_t;
 
 user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array, int registered_users_count, char *userID)
@@ -87,11 +88,12 @@ void call_request_access_token(user_tokens_t *current_user)
 		printf("REQUEST_DENIED\n");
 		return;
 	case REQUEST_ACESS_TOKEN_SUCCESS:
-		current_user->access_token = result->access_token;
+		current_user->access_token = strdup(result->access_token);
+		current_user->token_availability = result->availability;
 		if (current_user->automatically_refresh_token)
 		{
 			printf("%s -> %s, %s\n", current_user->auth_token, current_user->access_token, result->renew_token);
-			current_user->auth_token = result->renew_token;
+			current_user->auth_token = strdup(result->renew_token);
 		}
 		else
 		{
@@ -140,7 +142,7 @@ void call_request_authorization(user_tokens_t *current_user)
 	switch (result->status)
 	{
 	case REQUEST_AUTHORIZATION_SUCCESS:
-		current_user->auth_token = result->auth_token;
+		current_user->auth_token = strdup(result->auth_token);
 		call_approve_request_token(current_user);
 		break;
 	case REQUEST_AUTHORIZATION_USER_NOT_FOUND:
@@ -158,8 +160,36 @@ void run_request_action(user_tokens_t *current_user, int automatically_refresh_t
 	call_request_authorization(current_user);
 }
 
+void call_refresh_token(user_tokens_t *current_user)
+{
+	refresh_access_token_arg arg;
+	arg.userID = current_user->userID;
+	arg.renew_token = current_user->auth_token;
+	refresh_access_token_ret *result = refresh_access_token_1(&arg, clnt);
+	// treat errors
+	if (result == NULL)
+	{
+		clnt_perror(clnt, "Eroare la apelul RPC refresh_access_token_1");
+		return;
+	}
+	if (result->status == REFRESH_ACESS_TOKEN_SUCCESS)
+	{
+		current_user->auth_token = strdup(result->renew_token);
+		current_user->access_token = strdup(result->access_token);
+		current_user->token_availability = result->availability;
+	}
+	else
+	{
+		printf("A avut loc o eroare necunoscuta: Refresh Access Token\n");
+	}
+}
+
 void run_resource_action(user_tokens_t *current_user, char *action, char *resource)
 {
+	// check if token is expired
+	if (current_user->access_token != NULL && current_user->token_availability == 0 && current_user->automatically_refresh_token == 1) {
+		call_refresh_token(current_user);
+	}
 	validate_delegated_action_arg arg;
 	arg.op_type = action;
 	arg.resource = resource;
@@ -199,6 +229,7 @@ void run_resource_action(user_tokens_t *current_user, char *action, char *resour
 		printf("A avut loc o eroare necunoscuta: Validate Delegated Action\n");
 		break;
 	}
+	current_user->token_availability--;
 }
 
 void run_action(user_tokens_t *current_user, char *userID, char *action, char *resource)
@@ -236,9 +267,9 @@ void run_client()
 			user_tokens_array = (user_tokens_t *)realloc(user_tokens_array, (registered_users_count + 1) * sizeof(user_tokens_t));
 			registered_users_count++;
 			current_user = &user_tokens_array[registered_users_count - 1];
-			current_user->userID = userID;
+			current_user->userID = strdup(userID);
 		}
-		run_action(current_user, userID, action, resource);
+		run_action(current_user, userID, action, resource);		
 	}
 }
 
