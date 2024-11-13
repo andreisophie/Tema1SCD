@@ -1,10 +1,10 @@
-src/tema1_client
-src/tema1_client.o
-src/tema1_clnt.o
-src/tema1_server
-src/tema1_server.o
-src/tema1_svc.o
-src/tema1_xdr.o
+tema1_client
+tema1_client.o
+tema1_clnt.o
+tema1_server
+tema1_server.o
+tema1_svc.o
+tema1_xdr.o
 .vscode
 client.out
 server.out
