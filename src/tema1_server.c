@@ -234,7 +234,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 				if (!strcmp(resources[j], resource)) {
 					if (user_infos[i].resource_permissions[j] == NULL) {
 						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
-						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
+						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
 						return &result;
 					}
 					// Check if user has permission
