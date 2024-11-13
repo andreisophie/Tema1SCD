@@ -377,6 +377,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 				}
 			}
 			result.status = VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND;
+			printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 			return &result;
 		}
 	}
