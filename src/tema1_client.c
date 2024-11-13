@@ -53,8 +53,7 @@ typedef struct
 	char *userID;
 	char *auth_token;
 	char *access_token;
-	char *renew_token;
-	int has_renew_token;
+	int automatically_refresh_token;
 } user_tokens_t;
 
 user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array, int registered_users_count, char *userID)
@@ -69,7 +68,7 @@ user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array, int registered_
 	return NULL;
 }
 
-int call_request_access_token(user_tokens_t *current_user)
+void call_request_access_token(user_tokens_t *current_user)
 {
 	request_access_token_arg arg;
 	arg.userID = current_user->userID;
@@ -79,25 +78,25 @@ int call_request_access_token(user_tokens_t *current_user)
 	if (result == NULL)
 	{
 		clnt_perror(clnt, "Eroare la apelul RPC request_access_token_1");
-		return -1;
+		return;
 	}
 	switch (result->status)
 	{
 	case REQUEST_ACESS_TOKEN_REQUEST_DENIED:
 		printf("REQUEST_DENIED\n");
-		return -1;
+		return;
 	case REQUEST_ACESS_TOKEN_SUCCESS:
 		current_user->access_token = result->access_token;
 		printf("%s -> %s\n", current_user->auth_token, current_user->access_token);
 		break;
 	default:
 		printf("A avut loc o eroare necunoscuta: Request Access Token\n");
-		return -1;
+		return;
 	}
 	return 0;
 }
 
-int call_approve_request_token(user_tokens_t *current_user)
+void call_approve_request_token(user_tokens_t *current_user)
 {
 	// next step is to sign the token
 	approve_request_token_arg arg;
@@ -107,16 +106,15 @@ int call_approve_request_token(user_tokens_t *current_user)
 	if (result == NULL)
 	{
 		clnt_perror(clnt, "Eroare la apelul RPC approve_request_token_1");
-		return -1;
+		return;
 	}
 	if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS)
 	{
-		return call_request_access_token(current_user);
+		call_request_access_token(current_user);
 	}
 	else
 	{
 		printf("A avut loc o eroare necunoscuta: Approve Request Token\n");
-		return -1;
 	}
 }
 
@@ -129,25 +127,26 @@ int call_request_authorization(user_tokens_t *current_user)
 	if (result == NULL)
 	{
 		clnt_perror(clnt, "Eroare la apelul RPC request_authorization_1");
-		return -1;
+		return;
 	}
 	switch (result->status)
 	{
 	case REQUEST_AUTHORIZATION_SUCCESS:
 		current_user->auth_token = result->auth_token;
-		return call_approve_request_token(current_user);
+		call_approve_request_token(current_user);
+		break;
 	case REQUEST_AUTHORIZATION_USER_NOT_FOUND:
 		printf("USER_NOT_FOUND\n");
-		return -1;
+		break;
 	default:
 		printf("A avut loc o eroare necunoscuta: Request Authorization\n");
-		return -1;
+		break;
 	}
 }
 
-void run_request_action(user_tokens_t *current_user, int has_renew_token)
+void run_request_action(user_tokens_t *current_user, int automatically_refresh_token)
 {
-	current_user->has_renew_token = has_renew_token;
+	current_user->automatically_refresh_token = automatically_refresh_token;
 	int ret = call_request_authorization(current_user);
 }
 
@@ -198,8 +197,8 @@ void run_action(user_tokens_t *current_user, char *userID, char *action, char *r
 {
 	if (!strcmp(action, REQUEST))
 	{
-		int has_renew_token = atoi(resource);
-		run_request_action(current_user, has_renew_token);
+		int automatically_refresh_token = atoi(resource);
+		run_request_action(current_user, automatically_refresh_token);
 	}
 	else
 	{

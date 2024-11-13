@@ -16,7 +16,6 @@ typedef struct
 	char *auth_token;
 	char *access_token;
 	int availability;
-	char *renew_token;
 	char **resource_permissions;
 } user_info_t;
 
@@ -250,7 +249,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 		return &result;
 	}
 
-	// Search for user
+	// Search for user with the given access token
 	for (int i = 0; i < users_count; i++)
 	{
 		if (user_infos[i].access_token == NULL)
