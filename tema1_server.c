@@ -96,7 +96,8 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 			user_infos[i].auth_token = NULL;
 			user_infos[i].access_token = NULL;
 			user_infos[i].availability = 0;
-			user_infos->automatically_refresh_token = 0;
+			user_infos[i].automatically_refresh_token = 0;
+			user_infos[i].resource_permissions = NULL;
 			// Then generate the new token
 			result.status = REQUEST_AUTHORIZATION_SUCCESS;
 			char *token = generate_access_token(userID);
@@ -384,5 +385,6 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 
 	printf("DENY (%s,%s,,0)\n", op_type, resource);
 	result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
+	fflush(stdout);
 	return &result;
 }

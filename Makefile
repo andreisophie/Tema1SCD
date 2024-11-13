@@ -42,7 +42,7 @@ $(SERVER) : $(OBJECTS_SVC)
 	$(LINK.c) -o $(SERVER) $(OBJECTS_SVC) $(LDLIBS)
 
 SERVER_ADDR=localhost
-TESTNO=3
+TESTNO=1
 SERVER_PARAMS=../tests/test$(TESTNO)/userIDs.db ../tests/test$(TESTNO)/resources.db ../tests/test$(TESTNO)/approvals.db
 CLIENT_PARAMS=../tests/test$(TESTNO)/client.in
 TOKEN_LIFETIME=2
@@ -54,5 +54,5 @@ run_client: $(CLIENT)
 	./$(CLIENT) $(SERVER_ADDR) $(CLIENT_PARAMS)
 
 clean:
-	$(RM) core $(OBJECTS_CLNT) $(OBJECTS_SVC) $(CLIENT) $(SERVER)
+	$(RM) core $(OBJECTS_CLNT) $(OBJECTS_SVC) $(CLIENT) $(SERVER) *.out
 
