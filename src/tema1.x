@@ -49,6 +49,25 @@ struct request_access_token_ret {
     unsigned int availability;
 };
 
+/* Refresh Access Token structs */
+
+struct refresh_access_token_arg {
+    string userID<>;
+    string renew_token<>;
+};
+
+enum refresh_access_token_status {
+    REFRESH_ACESS_TOKEN_SUCCESS,
+    REFRESH_ACESS_TOKEN_ERROR
+};
+
+struct refresh_access_token_ret {
+    enum refresh_access_token_status status;
+    string access_token<>;
+    string renew_token<>;
+    unsigned int availability;
+};
+
 /* Validate Delegated Action structs */
 
 struct validate_delegated_action_arg {
@@ -80,9 +99,10 @@ program TEMA1_PROG {
         /* Request Access Token */
         request_access_token_ret request_access_token(request_access_token_arg) = 3;
 
-        /* Validate Delegated Action */
-        validate_delegated_action_ret validate_delegated_action(validate_delegated_action_arg) = 4;
+        /* Refresh Access Token */
+        refresh_access_token_ret refresh_access_token(refresh_access_token_arg) = 4;
 
-        
+        /* Validate Delegated Action */
+        validate_delegated_action_ret validate_delegated_action(validate_delegated_action_arg) = 5;
     } = 1;
 } = 1;

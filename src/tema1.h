@@ -68,6 +68,26 @@ struct request_access_token_ret {
 };
 typedef struct request_access_token_ret request_access_token_ret;
 
+struct refresh_access_token_arg {
+	char *userID;
+	char *renew_token;
+};
+typedef struct refresh_access_token_arg refresh_access_token_arg;
+
+enum refresh_access_token_status {
+	REFRESH_ACESS_TOKEN_SUCCESS = 0,
+	REFRESH_ACESS_TOKEN_ERROR = 1,
+};
+typedef enum refresh_access_token_status refresh_access_token_status;
+
+struct refresh_access_token_ret {
+	enum refresh_access_token_status status;
+	char *access_token;
+	char *renew_token;
+	u_int availability;
+};
+typedef struct refresh_access_token_ret refresh_access_token_ret;
+
 struct validate_delegated_action_arg {
 	char *op_type;
 	char *resource;
@@ -102,7 +122,10 @@ extern  approve_request_token_ret * approve_request_token_1_svc(approve_request_
 #define request_access_token 3
 extern  request_access_token_ret * request_access_token_1(request_access_token_arg *, CLIENT *);
 extern  request_access_token_ret * request_access_token_1_svc(request_access_token_arg *, struct svc_req *);
-#define validate_delegated_action 4
+#define refresh_access_token 4
+extern  refresh_access_token_ret * refresh_access_token_1(refresh_access_token_arg *, CLIENT *);
+extern  refresh_access_token_ret * refresh_access_token_1_svc(refresh_access_token_arg *, struct svc_req *);
+#define validate_delegated_action 5
 extern  validate_delegated_action_ret * validate_delegated_action_1(validate_delegated_action_arg *, CLIENT *);
 extern  validate_delegated_action_ret * validate_delegated_action_1_svc(validate_delegated_action_arg *, struct svc_req *);
 extern int tema1_prog_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
@@ -117,7 +140,10 @@ extern  approve_request_token_ret * approve_request_token_1_svc();
 #define request_access_token 3
 extern  request_access_token_ret * request_access_token_1();
 extern  request_access_token_ret * request_access_token_1_svc();
-#define validate_delegated_action 4
+#define refresh_access_token 4
+extern  refresh_access_token_ret * refresh_access_token_1();
+extern  refresh_access_token_ret * refresh_access_token_1_svc();
+#define validate_delegated_action 5
 extern  validate_delegated_action_ret * validate_delegated_action_1();
 extern  validate_delegated_action_ret * validate_delegated_action_1_svc();
 extern int tema1_prog_1_freeresult ();
@@ -135,6 +161,9 @@ extern  bool_t xdr_approve_request_token_ret (XDR *, approve_request_token_ret*)
 extern  bool_t xdr_request_access_token_arg (XDR *, request_access_token_arg*);
 extern  bool_t xdr_request_access_token_status (XDR *, request_access_token_status*);
 extern  bool_t xdr_request_access_token_ret (XDR *, request_access_token_ret*);
+extern  bool_t xdr_refresh_access_token_arg (XDR *, refresh_access_token_arg*);
+extern  bool_t xdr_refresh_access_token_status (XDR *, refresh_access_token_status*);
+extern  bool_t xdr_refresh_access_token_ret (XDR *, refresh_access_token_ret*);
 extern  bool_t xdr_validate_delegated_action_arg (XDR *, validate_delegated_action_arg*);
 extern  bool_t xdr_validate_delegated_action_status (XDR *, validate_delegated_action_status*);
 extern  bool_t xdr_validate_delegated_action_ret (XDR *, validate_delegated_action_ret*);
@@ -149,6 +178,9 @@ extern bool_t xdr_approve_request_token_ret ();
 extern bool_t xdr_request_access_token_arg ();
 extern bool_t xdr_request_access_token_status ();
 extern bool_t xdr_request_access_token_ret ();
+extern bool_t xdr_refresh_access_token_arg ();
+extern bool_t xdr_refresh_access_token_status ();
+extern bool_t xdr_refresh_access_token_ret ();
 extern bool_t xdr_validate_delegated_action_arg ();
 extern bool_t xdr_validate_delegated_action_status ();
 extern bool_t xdr_validate_delegated_action_ret ();

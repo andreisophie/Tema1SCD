@@ -254,6 +254,18 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 	return &result;
 }
 
+refresh_access_token_ret *
+refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp)
+{
+	static refresh_access_token_ret  result;
+
+	/*
+	 * insert server code here
+	 */
+
+	return &result;
+}
+
 validate_delegated_action_ret *
 validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_req *rqstp)
 {

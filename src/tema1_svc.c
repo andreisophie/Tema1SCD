@@ -23,6 +23,7 @@ tema1_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		request_authorization_arg request_authorization_1_arg;
 		approve_request_token_arg approve_request_token_1_arg;
 		request_access_token_arg request_access_token_1_arg;
+		refresh_access_token_arg refresh_access_token_1_arg;
 		validate_delegated_action_arg validate_delegated_action_1_arg;
 	} argument;
 	char *result;
@@ -50,6 +51,12 @@ tema1_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_request_access_token_arg;
 		_xdr_result = (xdrproc_t) xdr_request_access_token_ret;
 		local = (char *(*)(char *, struct svc_req *)) request_access_token_1_svc;
+		break;
+
+	case refresh_access_token:
+		_xdr_argument = (xdrproc_t) xdr_refresh_access_token_arg;
+		_xdr_result = (xdrproc_t) xdr_refresh_access_token_ret;
+		local = (char *(*)(char *, struct svc_req *)) refresh_access_token_1_svc;
 		break;
 
 	case validate_delegated_action:

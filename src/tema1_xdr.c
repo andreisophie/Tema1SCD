@@ -108,6 +108,44 @@ xdr_request_access_token_ret (XDR *xdrs, request_access_token_ret *objp)
 }
 
 bool_t
+xdr_refresh_access_token_arg (XDR *xdrs, refresh_access_token_arg *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, &objp->userID, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->renew_token, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_refresh_access_token_status (XDR *xdrs, refresh_access_token_status *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_enum (xdrs, (enum_t *) objp))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_refresh_access_token_ret (XDR *xdrs, refresh_access_token_ret *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_refresh_access_token_status (xdrs, &objp->status))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->access_token, ~0))
+		 return FALSE;
+	 if (!xdr_string (xdrs, &objp->renew_token, ~0))
+		 return FALSE;
+	 if (!xdr_u_int (xdrs, &objp->availability))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
 xdr_validate_delegated_action_arg (XDR *xdrs, validate_delegated_action_arg *objp)
 {
 	register int32_t *buf;

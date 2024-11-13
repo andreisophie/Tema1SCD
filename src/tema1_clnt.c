@@ -54,6 +54,21 @@ request_access_token_1(request_access_token_arg *argp, CLIENT *clnt)
 	return (&clnt_res);
 }
 
+refresh_access_token_ret *
+refresh_access_token_1(refresh_access_token_arg *argp, CLIENT *clnt)
+{
+	static refresh_access_token_ret clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, refresh_access_token,
+		(xdrproc_t) xdr_refresh_access_token_arg, (caddr_t) argp,
+		(xdrproc_t) xdr_refresh_access_token_ret, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
+}
+
 validate_delegated_action_ret *
 validate_delegated_action_1(validate_delegated_action_arg *argp, CLIENT *clnt)
 {
