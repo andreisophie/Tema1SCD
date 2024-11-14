@@ -90,7 +90,7 @@ extern void initialize_server(char *client_file, char *resource_file, char *appr
 int
 main (int argc, char **argv)
 {
-	// Initialize server data
+	// Parse input arguments
 	if (argc < 5) {
 		printf ("Utilizare: %s <fisier_clienti> <fisier_resurse> <fisier_aprobari> <valabilitate_jetoane> \n", argv[0]);
 		exit (1);
@@ -101,6 +101,7 @@ main (int argc, char **argv)
 	char *approval_file = argv[3];
 	int token_validity = atoi(argv[4]);
 
+	// Initialize server data
 	initialize_server(client_file, resource_file, approval_file, token_validity);
 
 	// Initialize RPC server

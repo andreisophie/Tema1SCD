@@ -10,6 +10,7 @@
 #include <rpc/rpc.h>
 #include "token.h"
 
+// Struct where server-side data regarding users is stored
 typedef struct
 {
 	char *userID;
@@ -29,6 +30,7 @@ char **resources;
 int global_token_availability;
 FILE *approval_file_ptr;
 
+// Function to initialize server data
 void initialize_server(char *userid_file, char *resource_file, char *approval_file, int arg_token_validity)
 {
 	// Read client IDs
@@ -39,7 +41,7 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 		exit(1);
 	}
 	fscanf(userid_file_ptr, "%d", &users_count);
-	user_infos = (user_info_t *)malloc(users_count * sizeof(user_info_t));
+	user_infos = (user_info_t *)calloc(users_count, sizeof(user_info_t));
 	for (int i = 0; i < users_count; i++)
 	{
 		user_infos[i].userID = (char *)malloc(USERID_SIZE * sizeof(char));
@@ -56,7 +58,7 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 	}
 
 	fscanf(resource_file_ptr, "%d", &resource_count);
-	resources = (char **)malloc(resource_count * sizeof(char *));
+	resources = (char **)calloc(resource_count, sizeof(char *));
 	for (int i = 0; i < resource_count; i++)
 	{
 		resources[i] = (char *)malloc(STING_SIZE * sizeof(char));
@@ -164,11 +166,12 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 				{
 					if (!strcmp(resources[j], resource))
 					{
-						// Add resource to user
+						// Assign resource permissions to user
 						user_infos[i].resource_permissions[j] = permissions;
 						break;
 					}
 				}
+				// Read next resource and permissions
 				resource = strtok(NULL, ",");
 				if (resource == NULL)
 				{
@@ -210,7 +213,8 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 			}
 			if (!strcmp(auth_token, user_infos[i].auth_token))
 			{
-				// Check if user has signed the token
+				// Check if user has signed the token and received any permissions
+				// (Users with permission *,- fall into this category too)
 				if (user_infos[i].resource_permissions == NULL)
 				{
 					result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
@@ -219,22 +223,27 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				// Generate access token
 				char *access_token = generate_access_token(auth_token);
 				result.access_token = access_token;
+				// Generate renew token only if user has requested automatic refresh
 				if (automatically_refresh_token)
 				{
 					result.renew_token = generate_access_token(access_token);
 				}
 				else
 				{
+					// If user didn't ask for automatic refresh, I still need to assign memory
+					// so the RPC call can encode the data
 					result.renew_token = (char *)malloc(1);
 				}
 				result.availability = global_token_availability;
 				result.status = REQUEST_ACESS_TOKEN_SUCCESS;
 				user_infos[i].access_token = access_token;
 				user_infos[i].availability = global_token_availability;
+				user_infos[i].automatically_refresh_token = automatically_refresh_token;
 				printf("  AccessToken = %s\n", access_token);
 				if (automatically_refresh_token)
 				{
 					printf("  RefreshToken = %s\n", result.renew_token);
+					// The renew token becomes the new auth token
 					user_infos[i].auth_token = result.renew_token;
 				}
 				fflush(stdout);
@@ -272,12 +281,18 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 				result.status = REFRESH_ACESS_TOKEN_ERROR;
 				return &result;
 			}
+			// Check if user has requested automatic refresh previously
+			if (!user_infos[i].automatically_refresh_token)
+			{
+				result.status = REFRESH_ACESS_TOKEN_ERROR;
+				return &result;
+			}
 			if (!strcmp(renew_token, user_infos[i].auth_token))
 			{
 				// Check if user has signed the token
 				if (user_infos[i].resource_permissions == NULL)
 				{
-					result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
+					result.status = REFRESH_ACESS_TOKEN_ERROR;
 					return &result;
 				}
 				// Generate access token
@@ -351,6 +366,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 			{
 				if (!strcmp(resources[j], resource))
 				{
+					// Check if user has any permissions for the resource
 					if (user_infos[i].resource_permissions[j] == NULL)
 					{
 						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
@@ -358,7 +374,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 						fflush(stdout);
 						return &result;
 					}
-					// Check if user has permission
+					// Check if user has permission to execute the requested operation
 					char op_type_chr;
 					if (op_type[0] == 'E')
 					{
@@ -384,13 +400,14 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 					}
 				}
 			}
+			// Resource not found
 			result.status = VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND;
 			printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
 			fflush(stdout);
 			return &result;
 		}
 	}
-
+	// Access token not found
 	printf("DENY (%s,%s,,0)\n", op_type, resource);
 	result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
 	fflush(stdout);

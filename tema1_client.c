@@ -48,6 +48,7 @@ void shutdown_client()
 	fclose(in_file);
 }
 
+// Struct where client-side data regarding users is stored
 typedef struct
 {
 	char *userID;
@@ -57,6 +58,8 @@ typedef struct
 	int token_availability;
 } user_tokens_t;
 
+// Function to search for user with a given ID in the array of user data
+// Returns NULL if user is not found
 user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array, int registered_users_count, char *userID)
 {
 	for (int i = 0; i < registered_users_count; i++)
@@ -69,12 +72,13 @@ user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array, int registered_
 	return NULL;
 }
 
-void call_request_access_token(user_tokens_t *current_user)
+void call_request_access_token(user_tokens_t *current_user, int automatically_refresh_token)
 {
+	// Call the procedure
 	request_access_token_arg arg;
 	arg.userID = current_user->userID;
 	arg.auth_token = current_user->auth_token;
-	arg.automatically_refresh_token = current_user->automatically_refresh_token;
+	arg.automatically_refresh_token = automatically_refresh_token;
 	request_access_token_ret *result = request_access_token_1(&arg, clnt);
 	// treat errors
 	if (result == NULL)
@@ -88,12 +92,15 @@ void call_request_access_token(user_tokens_t *current_user)
 		printf("REQUEST_DENIED\n");
 		return;
 	case REQUEST_ACESS_TOKEN_SUCCESS:
+		// If request was succesful, store the access token and print a message
+		// This is also the last step of the auth process
 		current_user->access_token = strdup(result->access_token);
 		current_user->token_availability = result->availability;
-		if (current_user->automatically_refresh_token)
+		if (automatically_refresh_token)
 		{
 			printf("%s -> %s,%s\n", current_user->auth_token, current_user->access_token, result->renew_token);
 			current_user->auth_token = strdup(result->renew_token);
+			current_user->automatically_refresh_token = automatically_refresh_token;
 		}
 		else
 		{
@@ -106,9 +113,9 @@ void call_request_access_token(user_tokens_t *current_user)
 	}
 }
 
-void call_approve_request_token(user_tokens_t *current_user)
+void call_approve_request_token(user_tokens_t *current_user, int automatically_refresh_token)
 {
-	// next step is to sign the token
+	// Call the procedure
 	approve_request_token_arg arg;
 	arg.auth_token = current_user->auth_token;
 	approve_request_token_ret *result = approve_request_token_1(&arg, clnt);
@@ -120,7 +127,8 @@ void call_approve_request_token(user_tokens_t *current_user)
 	}
 	if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS)
 	{
-		call_request_access_token(current_user);
+		// After token was signed succesfully, request the access token
+		call_request_access_token(current_user, automatically_refresh_token);
 	}
 	else
 	{
@@ -128,8 +136,9 @@ void call_approve_request_token(user_tokens_t *current_user)
 	}
 }
 
-void call_request_authorization(user_tokens_t *current_user)
+void call_request_authorization(user_tokens_t *current_user, int automatically_refresh_token)
 {
+	// Call the procedure
 	request_authorization_arg arg;
 	arg.userID = current_user->userID;
 	request_authorization_ret *result = request_authorization_1(&arg, clnt);
@@ -142,8 +151,10 @@ void call_request_authorization(user_tokens_t *current_user)
 	switch (result->status)
 	{
 	case REQUEST_AUTHORIZATION_SUCCESS:
+		// If request was successful, store the auth token
+		// and continue with the next step, signing the token
 		current_user->auth_token = strdup(result->auth_token);
-		call_approve_request_token(current_user);
+		call_approve_request_token(current_user, automatically_refresh_token);
 		break;
 	case REQUEST_AUTHORIZATION_USER_NOT_FOUND:
 		printf("USER_NOT_FOUND\n");
@@ -156,12 +167,13 @@ void call_request_authorization(user_tokens_t *current_user)
 
 void run_request_action(user_tokens_t *current_user, int automatically_refresh_token)
 {
-	current_user->automatically_refresh_token = automatically_refresh_token;
-	call_request_authorization(current_user);
+	// Begin the request authorization process
+	call_request_authorization(current_user, automatically_refresh_token);
 }
 
 void call_refresh_token(user_tokens_t *current_user)
 {
+	// Call the procedure
 	refresh_access_token_arg arg;
 	arg.userID = current_user->userID;
 	arg.renew_token = current_user->auth_token;
@@ -174,6 +186,7 @@ void call_refresh_token(user_tokens_t *current_user)
 	}
 	if (result->status == REFRESH_ACESS_TOKEN_SUCCESS)
 	{
+		// If token was renewed succesfully, store the new tokens
 		current_user->auth_token = strdup(result->renew_token);
 		current_user->access_token = strdup(result->access_token);
 		current_user->token_availability = result->availability;
@@ -187,14 +200,18 @@ void call_refresh_token(user_tokens_t *current_user)
 void run_resource_action(user_tokens_t *current_user, char *action, char *resource)
 {
 	// check if token is expired
-	if (current_user->access_token != NULL && current_user->token_availability == 0 && current_user->automatically_refresh_token == 1) {
+	if (current_user->access_token != NULL && current_user->token_availability == 0 && current_user->automatically_refresh_token == 1)
+	{
+		// If it is, renew it
 		call_refresh_token(current_user);
 	}
+	// Call the procedure
 	validate_delegated_action_arg arg;
 	arg.op_type = action;
 	arg.resource = resource;
 	if (current_user->access_token == NULL)
 	{
+		// If user has no access token, then send an empty string
 		arg.access_token = calloc(1, 1);
 	}
 	else
@@ -229,13 +246,16 @@ void run_resource_action(user_tokens_t *current_user, char *action, char *resour
 		printf("A avut loc o eroare necunoscuta: Validate Delegated Action\n");
 		break;
 	}
-	current_user->token_availability--;
+	// Decrement token availability, if user has any
+	if (current_user->access_token != NULL && current_user->token_availability > 0)
+		current_user->token_availability--;
 }
 
 void run_action(user_tokens_t *current_user, char *userID, char *action, char *resource)
 {
 	if (!strcmp(action, REQUEST))
 	{
+		// Parse the last argument as int
 		int automatically_refresh_token = atoi(resource);
 		run_request_action(current_user, automatically_refresh_token);
 	}
@@ -255,26 +275,30 @@ void run_client()
 	char *resource;
 	int registered_users_count = 0;
 	user_tokens_t *user_tokens_array = NULL;
+	// Read each line from input file and execute the requested operation
 	while (getline(&line, &len, in_file) != -1)
 	{
+		// Parse the input
 		userID = strtok(line, ",");
 		action = strtok(NULL, ",");
 		resource = strtok(NULL, "\n");
+		// Search for user in client-side database
 		user_tokens_t *current_user = find_user_by_ID(user_tokens_array, registered_users_count, userID);
 		if (current_user == NULL)
 		{
-			// register user in client-side database
+			// If no user is found, then register the new user in client-side database
 			user_tokens_array = (user_tokens_t *)realloc(user_tokens_array, (registered_users_count + 1) * sizeof(user_tokens_t));
 			registered_users_count++;
 			current_user = &user_tokens_array[registered_users_count - 1];
 			current_user->userID = strdup(userID);
 		}
-		run_action(current_user, userID, action, resource);		
+		run_action(current_user, userID, action, resource);
 	}
 }
 
 int main(int argc, char *argv[])
 {
+	// Parse command line arguments
 	char *host;
 	char *op_file;
 
