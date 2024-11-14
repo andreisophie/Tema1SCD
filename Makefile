@@ -27,6 +27,7 @@ RPCGENFLAGS =
 # Targets 
 
 all : $(CLIENT) $(SERVER)
+build: $(CLIENT) $(SERVER)
 
 # $(TARGETS) : $(SOURCES.x) 
 # 	rpcgen $(RPCGENFLAGS) $(SOURCES.x)
