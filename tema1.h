@@ -15,7 +15,7 @@ extern "C" {
 
 
 struct request_authorization_arg {
-	char *userID;
+	char *userid;
 };
 typedef struct request_authorization_arg request_authorization_arg;
 
@@ -48,7 +48,7 @@ struct approve_request_token_ret {
 typedef struct approve_request_token_ret approve_request_token_ret;
 
 struct request_access_token_arg {
-	char *userID;
+	char *userid;
 	char *auth_token;
 	int automatically_refresh_token;
 };
@@ -69,7 +69,7 @@ struct request_access_token_ret {
 typedef struct request_access_token_ret request_access_token_ret;
 
 struct refresh_access_token_arg {
-	char *userID;
+	char *userid;
 	char *renew_token;
 };
 typedef struct refresh_access_token_arg refresh_access_token_arg;

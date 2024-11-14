@@ -13,7 +13,7 @@
 // Struct where server-side data regarding users is stored
 typedef struct
 {
-	char *userID;
+	char *userid;
 	char *auth_token;
 	char *access_token;
 	int availability;
@@ -44,8 +44,8 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 	user_infos = (user_info_t *)calloc(users_count, sizeof(user_info_t));
 	for (int i = 0; i < users_count; i++)
 	{
-		user_infos[i].userID = (char *)malloc(USERID_SIZE * sizeof(char));
-		fscanf(userid_file_ptr, "%s", user_infos[i].userID);
+		user_infos[i].userid = (char *)malloc(USERID_SIZE * sizeof(char));
+		fscanf(userid_file_ptr, "%s", user_infos[i].userid);
 	}
 	fclose(userid_file_ptr);
 
@@ -83,15 +83,15 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 {
 	static request_authorization_ret result;
 
-	char *userID = argp->userID;
+	char *userid = argp->userid;
 
 	// Print message
-	printf("BEGIN %s AUTHZ\n", userID);
+	printf("BEGIN %s AUTHZ\n", userid);
 
 	// Check if user exists
 	for (int i = 0; i < users_count; i++)
 	{
-		if (!strcmp(user_infos[i].userID, userID))
+		if (!strcmp(user_infos[i].userid, userid))
 		{
 			// First of all, empty all previous tokens
 			user_infos[i].auth_token = NULL;
@@ -101,7 +101,7 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 			user_infos[i].resource_permissions = NULL;
 			// Then generate the new token
 			result.status = REQUEST_AUTHORIZATION_SUCCESS;
-			char *token = generate_access_token(userID);
+			char *token = generate_access_token(userid);
 			user_infos[i].auth_token = token;
 			result.auth_token = token;
 			printf("  RequestToken = %s\n", token);
@@ -196,14 +196,14 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 {
 	static request_access_token_ret result;
 
-	char *userID = argp->userID;
+	char *userid = argp->userid;
 	char *auth_token = argp->auth_token;
 	int automatically_refresh_token = argp->automatically_refresh_token;
 
 	// Search user in db
 	for (int i = 0; i < users_count; i++)
 	{
-		if (!strcmp(userID, user_infos[i].userID))
+		if (!strcmp(userid, user_infos[i].userid))
 		{
 			// Check if token is valid
 			if (user_infos[i].auth_token == NULL)
@@ -266,14 +266,14 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 {
 	static refresh_access_token_ret  result;
 
-	char *userID = argp->userID;
+	char *userid = argp->userid;
 	char *renew_token = argp->renew_token;
 
 	// Search for user in db
 	// Search user in db
 	for (int i = 0; i < users_count; i++)
 	{
-		if (!strcmp(userID, user_infos[i].userID))
+		if (!strcmp(userid, user_infos[i].userid))
 		{
 			// Check if token is valid
 			if (user_infos[i].auth_token == NULL)
@@ -296,7 +296,7 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 					return &result;
 				}
 				// Generate access token
-				printf("BEGIN %s AUTHZ REFRESH\n", userID);
+				printf("BEGIN %s AUTHZ REFRESH\n", userid);
 				char *access_token = generate_access_token(renew_token);
 				result.access_token = access_token;
 				result.renew_token = generate_access_token(access_token);
@@ -323,7 +323,8 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 }
 
 validate_delegated_action_ret *
-validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_req *rqstp)
+validate_delegated_action_1_svc(validate_delegated_action_arg *argp,
+								struct svc_req *rqstp)
 {
 	static validate_delegated_action_ret result;
 
@@ -352,7 +353,8 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 			// First of all, check if token is expired
 			if (user_infos[i].availability == 0)
 			{
-				printf("DENY (%s,%s,,%d)\n", op_type, resource, user_infos[i].availability);
+				printf("DENY (%s,%s,,%d)\n", op_type, resource,
+					   user_infos[i].availability);
 				result.status = VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED;
 				fflush(stdout);
 				return &result;
@@ -360,7 +362,8 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 			// If still available, decrement availability
 			user_infos[i].availability--;
 			// Check if user has permission
-			// Note: If user has an access token, then his auth token must have been already signed,
+			// Note: If user has an access token, then his auth token
+			// 		 must have been already signed,
 			//       so resource_permissions is initialized
 			for (int j = 0; j < resource_count; j++)
 			{
@@ -369,12 +372,15 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 					// Check if user has any permissions for the resource
 					if (user_infos[i].resource_permissions[j] == NULL)
 					{
-						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
-						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
+						printf("DENY (%s,%s,%s,%d)\n", op_type, resource,
+							   user_infos[i].access_token,
+							   user_infos[i].availability);
+						result.status =
+							VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
 						fflush(stdout);
 						return &result;
 					}
-					// Check if user has permission to execute the requested operation
+					// Check if user has permission to execute the operation
 					char op_type_chr;
 					if (op_type[0] == 'E')
 					{
@@ -384,9 +390,12 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp, struct svc_
 					{
 						op_type_chr = op_type[0];
 					}
-					if (strchr(user_infos[i].resource_permissions[j], op_type_chr))
+					if (strchr(user_infos[i].resource_permissions[j],
+							   op_type_chr))
 					{
-						printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
+						printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource, 
+							   user_infos[i].access_token,
+							   user_infos[i].availability);
 						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED;
 						fflush(stdout);
 						return &result;

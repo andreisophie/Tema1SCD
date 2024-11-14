@@ -28,8 +28,8 @@ RPCGENFLAGS =
 
 all : $(CLIENT) $(SERVER)
 
-$(TARGETS) : $(SOURCES.x) 
-	rpcgen $(RPCGENFLAGS) $(SOURCES.x)
+# $(TARGETS) : $(SOURCES.x) 
+# 	rpcgen $(RPCGENFLAGS) $(SOURCES.x)
 
 $(OBJECTS_CLNT) : $(SOURCES_CLNT.c) $(SOURCES_CLNT.h) $(TARGETS_CLNT.c) 
 
@@ -52,6 +52,10 @@ run_server: $(SERVER)
 
 run_client: $(CLIENT)
 	./$(CLIENT) $(SERVER_ADDR) $(CLIENT_PARAMS)
+
+run_cs:
+	./cs/cs.sh $(CLIENT).c
+	./cs/cs.sh $(SERVER).c
 
 clean:
 	$(RM) core $(OBJECTS_CLNT) $(OBJECTS_SVC) $(CLIENT) $(SERVER) *.out

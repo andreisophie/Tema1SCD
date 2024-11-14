@@ -24,22 +24,20 @@ void initialize_client(char *host, char *op_file)
 {
 #ifndef DEBUG
 	clnt = clnt_create(host, TEMA1_PROG, TEMA1_VERS, "udp");
-	if (clnt == NULL)
-	{
+	if (!clnt) {
 		clnt_pcreateerror("Eroare la crearea clientului");
 		exit(1);
 	}
 #endif /* DEBUG */
 
 	in_file = fopen(op_file, "r");
-	if (in_file == NULL)
-	{
+	if (!in_file) {
 		printf("Eroare la deschiderea fisierului client.in\n");
 		exit(1);
 	}
 }
 
-void shutdown_client()
+void shutdown_client(void)
 {
 #ifndef DEBUG
 	clnt_destroy(clnt);
@@ -49,9 +47,8 @@ void shutdown_client()
 }
 
 // Struct where client-side data regarding users is stored
-typedef struct
-{
-	char *userID;
+typedef struct {
+	char *userid;
 	char *auth_token;
 	char *access_token;
 	int automatically_refresh_token;
@@ -60,34 +57,30 @@ typedef struct
 
 // Function to search for user with a given ID in the array of user data
 // Returns NULL if user is not found
-user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array, int registered_users_count, char *userID)
+user_tokens_t *find_user_by_ID(user_tokens_t *user_tokens_array,
+							   int registered_users_count, char *userid)
 {
 	for (int i = 0; i < registered_users_count; i++)
-	{
-		if (!strcmp(user_tokens_array[i].userID, userID))
-		{
+		if (!strcmp(user_tokens_array[i].userid, userid))
 			return &user_tokens_array[i];
-		}
-	}
 	return NULL;
 }
 
-void call_request_access_token(user_tokens_t *current_user, int automatically_refresh_token)
+void call_request_access_token(user_tokens_t *current_user,
+							   int automatically_refresh_token)
 {
 	// Call the procedure
 	request_access_token_arg arg;
-	arg.userID = current_user->userID;
+	arg.userid = current_user->userid;
 	arg.auth_token = current_user->auth_token;
 	arg.automatically_refresh_token = automatically_refresh_token;
 	request_access_token_ret *result = request_access_token_1(&arg, clnt);
 	// treat errors
-	if (result == NULL)
-	{
+	if (!result) {
 		clnt_perror(clnt, "Eroare la apelul RPC request_access_token_1");
 		return;
 	}
-	switch (result->status)
-	{
+	switch (result->status) {
 	case REQUEST_ACESS_TOKEN_REQUEST_DENIED:
 		printf("REQUEST_DENIED\n");
 		return;
@@ -96,15 +89,15 @@ void call_request_access_token(user_tokens_t *current_user, int automatically_re
 		// This is also the last step of the auth process
 		current_user->access_token = strdup(result->access_token);
 		current_user->token_availability = result->availability;
-		if (automatically_refresh_token)
-		{
-			printf("%s -> %s,%s\n", current_user->auth_token, current_user->access_token, result->renew_token);
+		if (automatically_refresh_token) {
+			printf("%s -> %s,%s\n", current_user->auth_token,
+				   current_user->access_token, result->renew_token);
 			current_user->auth_token = strdup(result->renew_token);
-			current_user->automatically_refresh_token = automatically_refresh_token;
-		}
-		else
-		{
-			printf("%s -> %s\n", current_user->auth_token, current_user->access_token);
+			current_user->automatically_refresh_token =
+				automatically_refresh_token;
+		} else {
+			printf("%s -> %s\n", current_user->auth_token,
+				   current_user->access_token);
 		}
 		break;
 	default:
@@ -113,43 +106,39 @@ void call_request_access_token(user_tokens_t *current_user, int automatically_re
 	}
 }
 
-void call_approve_request_token(user_tokens_t *current_user, int automatically_refresh_token)
+void call_approve_request_token(user_tokens_t *current_user,
+								int automatically_refresh_token)
 {
 	// Call the procedure
 	approve_request_token_arg arg;
 	arg.auth_token = current_user->auth_token;
 	approve_request_token_ret *result = approve_request_token_1(&arg, clnt);
 	// treat errors
-	if (result == NULL)
-	{
+	if (!result) {
 		clnt_perror(clnt, "Eroare la apelul RPC approve_request_token_1");
 		return;
 	}
-	if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS)
-	{
+	if (result->status == APPROVE_REQUEST_TOKEN_SUCCESS) {
 		// After token was signed succesfully, request the access token
 		call_request_access_token(current_user, automatically_refresh_token);
-	}
-	else
-	{
+	} else {
 		printf("A avut loc o eroare necunoscuta: Approve Request Token\n");
 	}
 }
 
-void call_request_authorization(user_tokens_t *current_user, int automatically_refresh_token)
+void call_request_authorization(user_tokens_t *current_user,
+								int automatically_refresh_token)
 {
 	// Call the procedure
 	request_authorization_arg arg;
-	arg.userID = current_user->userID;
+	arg.userid = current_user->userid;
 	request_authorization_ret *result = request_authorization_1(&arg, clnt);
 	// treat errors
-	if (result == NULL)
-	{
+	if (!result) {
 		clnt_perror(clnt, "Eroare la apelul RPC request_authorization_1");
 		return;
 	}
-	switch (result->status)
-	{
+	switch (result->status) {
 	case REQUEST_AUTHORIZATION_SUCCESS:
 		// If request was successful, store the auth token
 		// and continue with the next step, signing the token
@@ -165,7 +154,8 @@ void call_request_authorization(user_tokens_t *current_user, int automatically_r
 	}
 }
 
-void run_request_action(user_tokens_t *current_user, int automatically_refresh_token)
+void run_request_action(user_tokens_t *current_user,
+						int automatically_refresh_token)
 {
 	// Begin the request authorization process
 	call_request_authorization(current_user, automatically_refresh_token);
@@ -175,33 +165,31 @@ void call_refresh_token(user_tokens_t *current_user)
 {
 	// Call the procedure
 	refresh_access_token_arg arg;
-	arg.userID = current_user->userID;
+	arg.userid = current_user->userid;
 	arg.renew_token = current_user->auth_token;
 	refresh_access_token_ret *result = refresh_access_token_1(&arg, clnt);
 	// treat errors
-	if (result == NULL)
-	{
+	if (!result) {
 		clnt_perror(clnt, "Eroare la apelul RPC refresh_access_token_1");
 		return;
 	}
-	if (result->status == REFRESH_ACESS_TOKEN_SUCCESS)
-	{
+	if (result->status == REFRESH_ACESS_TOKEN_SUCCESS) {
 		// If token was renewed succesfully, store the new tokens
 		current_user->auth_token = strdup(result->renew_token);
 		current_user->access_token = strdup(result->access_token);
 		current_user->token_availability = result->availability;
-	}
-	else
-	{
+	} else {
 		printf("A avut loc o eroare necunoscuta: Refresh Access Token\n");
 	}
 }
 
-void run_resource_action(user_tokens_t *current_user, char *action, char *resource)
+void run_resource_action(user_tokens_t *current_user, char *action,
+						 char *resource)
 {
 	// check if token is expired
-	if (current_user->access_token != NULL && current_user->token_availability == 0 && current_user->automatically_refresh_token == 1)
-	{
+	if (current_user->access_token &&
+		current_user->token_availability == 0 &&
+		current_user->automatically_refresh_token == 1) {
 		// If it is, renew it
 		call_refresh_token(current_user);
 	}
@@ -209,24 +197,20 @@ void run_resource_action(user_tokens_t *current_user, char *action, char *resour
 	validate_delegated_action_arg arg;
 	arg.op_type = action;
 	arg.resource = resource;
-	if (current_user->access_token == NULL)
-	{
+	if (!current_user->access_token) {
 		// If user has no access token, then send an empty string
 		arg.access_token = calloc(1, 1);
-	}
-	else
-	{
+	} else {
 		arg.access_token = current_user->access_token;
 	}
-	validate_delegated_action_ret *result = validate_delegated_action_1(&arg, clnt);
+	validate_delegated_action_ret * result =
+		validate_delegated_action_1(&arg, clnt);
 	// treat errors
-	if (result == NULL)
-	{
+	if (!result) {
 		clnt_perror(clnt, "Eroare la apelul RPC validate_delegated_action_1");
 		return;
 	}
-	switch (result->status)
-	{
+	switch (result->status) {
 	case VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED:
 		printf("PERMISSION_GRANTED\n");
 		break;
@@ -247,52 +231,51 @@ void run_resource_action(user_tokens_t *current_user, char *action, char *resour
 		break;
 	}
 	// Decrement token availability, if user has any
-	if (current_user->access_token != NULL && current_user->token_availability > 0)
+	if (current_user->access_token &&
+		current_user->token_availability > 0)
 		current_user->token_availability--;
 }
 
-void run_action(user_tokens_t *current_user, char *userID, char *action, char *resource)
+void run_action(user_tokens_t *current_user, char *userid, char *action,
+				char *resource)
 {
-	if (!strcmp(action, REQUEST))
-	{
+	if (!strcmp(action, REQUEST)) {
 		// Parse the last argument as int
 		int automatically_refresh_token = atoi(resource);
 		run_request_action(current_user, automatically_refresh_token);
-	}
-	else
-	{
+	} else {
 		// if action is not REQUEST, then it is one of RIMDX
 		run_resource_action(current_user, action, resource);
 	}
 }
 
-void run_client()
+void run_client(void)
 {
 	char *line = NULL;
 	size_t len = 0;
-	char *userID;
+	char *userid;
 	char *action;
 	char *resource;
 	int registered_users_count = 0;
 	user_tokens_t *user_tokens_array = NULL;
 	// Read each line from input file and execute the requested operation
-	while (getline(&line, &len, in_file) != -1)
-	{
+	while (getline(&line, &len, in_file) != -1) {
 		// Parse the input
-		userID = strtok(line, ",");
+		userid = strtok(line, ",");
 		action = strtok(NULL, ",");
 		resource = strtok(NULL, "\n");
 		// Search for user in client-side database
-		user_tokens_t *current_user = find_user_by_ID(user_tokens_array, registered_users_count, userID);
-		if (current_user == NULL)
-		{
-			// If no user is found, then register the new user in client-side database
-			user_tokens_array = (user_tokens_t *)realloc(user_tokens_array, (registered_users_count + 1) * sizeof(user_tokens_t));
+		user_tokens_t *current_user =
+			find_user_by_ID(user_tokens_array, registered_users_count, userid);
+		if (!current_user) {
+			// If no user is found, register the new user in client database
+			user_tokens_array = (user_tokens_t *)realloc(user_tokens_array,
+				(registered_users_count + 1) * sizeof(user_tokens_t));
 			registered_users_count++;
 			current_user = &user_tokens_array[registered_users_count - 1];
-			current_user->userID = strdup(userID);
+			current_user->userid = strdup(userid);
 		}
-		run_action(current_user, userID, action, resource);
+		run_action(current_user, userid, action, resource);
 	}
 }
 
@@ -302,9 +285,8 @@ int main(int argc, char *argv[])
 	char *host;
 	char *op_file;
 
-	if (argc < 3)
-	{
-		printf("Utilizare: %s <adresa_server> <fisier_operatii> \n", argv[0]);
+	if (argc < 3) {
+		printf("Utilizare: %s <adresa_server> <fisier_operatii>\n", argv[0]);
 		exit(1);
 	}
 	host = argv[1];

@@ -10,7 +10,7 @@ xdr_request_authorization_arg (XDR *xdrs, request_authorization_arg *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->userID, ~0))
+	 if (!xdr_string (xdrs, &objp->userid, ~0))
 		 return FALSE;
 	return TRUE;
 }
@@ -72,7 +72,7 @@ xdr_request_access_token_arg (XDR *xdrs, request_access_token_arg *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->userID, ~0))
+	 if (!xdr_string (xdrs, &objp->userid, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->auth_token, ~0))
 		 return FALSE;
@@ -112,7 +112,7 @@ xdr_refresh_access_token_arg (XDR *xdrs, refresh_access_token_arg *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->userID, ~0))
+	 if (!xdr_string (xdrs, &objp->userid, ~0))
 		 return FALSE;
 	 if (!xdr_string (xdrs, &objp->renew_token, ~0))
 		 return FALSE;
