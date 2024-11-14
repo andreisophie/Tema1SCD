@@ -11,8 +11,7 @@
 #include "token.h"
 
 // Struct where server-side data regarding users is stored
-typedef struct
-{
+typedef struct {
 	char *userid;
 	char *auth_token;
 	char *access_token;
@@ -22,28 +21,27 @@ typedef struct
 } user_info_t;
 
 #define USERID_SIZE 16
-int users_count = 0;
+int users_count;
 user_info_t *user_infos;
 #define STING_SIZE 64
-int resource_count = 0;
+int resource_count;
 char **resources;
 int global_token_availability;
 FILE *approval_file_ptr;
 
 // Function to initialize server data
-void initialize_server(char *userid_file, char *resource_file, char *approval_file, int arg_token_validity)
+void initialize_server(char *userid_file, char *resource_file,
+					   char *approval_file, int arg_token_validity)
 {
 	// Read client IDs
 	FILE *userid_file_ptr = fopen(userid_file, "r");
-	if (userid_file_ptr == NULL)
-	{
+	if (!userid_file_ptr) {
 		printf("Eroare la deschiderea fisierului %s\n", userid_file);
 		exit(1);
 	}
 	fscanf(userid_file_ptr, "%d", &users_count);
 	user_infos = (user_info_t *)calloc(users_count, sizeof(user_info_t));
-	for (int i = 0; i < users_count; i++)
-	{
+	for (int i = 0; i < users_count; i++) {
 		user_infos[i].userid = (char *)malloc(USERID_SIZE * sizeof(char));
 		fscanf(userid_file_ptr, "%s", user_infos[i].userid);
 	}
@@ -51,16 +49,14 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 
 	// Read resources
 	FILE *resource_file_ptr = fopen(resource_file, "r");
-	if (resource_file_ptr == NULL)
-	{
+	if (!resource_file_ptr) {
 		printf("Eroare la deschiderea fisierului %s\n", resource_file);
 		exit(1);
 	}
 
 	fscanf(resource_file_ptr, "%d", &resource_count);
 	resources = (char **)calloc(resource_count, sizeof(char *));
-	for (int i = 0; i < resource_count; i++)
-	{
+	for (int i = 0; i < resource_count; i++) {
 		resources[i] = (char *)malloc(STING_SIZE * sizeof(char));
 		fscanf(resource_file_ptr, "%s", resources[i]);
 	}
@@ -68,8 +64,7 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 
 	// Open approvals file
 	approval_file_ptr = fopen(approval_file, "r");
-	if (approval_file_ptr == NULL)
-	{
+	if (!approval_file_ptr) {
 		printf("Eroare la deschiderea fisierului %s\n", approval_file);
 		exit(1);
 	}
@@ -79,7 +74,8 @@ void initialize_server(char *userid_file, char *resource_file, char *approval_fi
 }
 
 request_authorization_ret *
-request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqstp)
+request_authorization_1_svc(request_authorization_arg *argp,
+							struct svc_req *rqstp)
 {
 	static request_authorization_ret result;
 
@@ -89,10 +85,8 @@ request_authorization_1_svc(request_authorization_arg *argp, struct svc_req *rqs
 	printf("BEGIN %s AUTHZ\n", userid);
 
 	// Check if user exists
-	for (int i = 0; i < users_count; i++)
-	{
-		if (!strcmp(user_infos[i].userid, userid))
-		{
+	for (int i = 0; i < users_count; i++) {
+		if (!strcmp(user_infos[i].userid, userid)) {
 			// First of all, empty all previous tokens
 			user_infos[i].auth_token = NULL;
 			user_infos[i].access_token = NULL;
@@ -121,51 +115,43 @@ void trim_string(char *str)
 
 	// Remove trailing newline
 	if (str[len - 1] == '\n')
-	{
 		str[len - 1] = '\0';
-	}
 }
 
 approve_request_token_ret *
-approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqstp)
+approve_request_token_1_svc(approve_request_token_arg *argp,
+							struct svc_req *rqstp)
 {
 	static approve_request_token_ret result;
 
 	char *auth_token = argp->auth_token;
 
 	// search for token in db
-	for (int i = 0; i < users_count; i++)
-	{
+	for (int i = 0; i < users_count; i++) {
 		// Some users might not have a token assigned
-		if (user_infos[i].auth_token == NULL)
-		{
+		if (!user_infos[i].auth_token)
 			continue;
-		}
-		if (!strcmp(user_infos[i].auth_token, auth_token))
-		{
+		if (!strcmp(user_infos[i].auth_token, auth_token)) {
 			// Read each permission from file
 			char *line = NULL;
 			size_t len = 0;
 			getline(&line, &len, approval_file_ptr);
 			// If line is "*,-" then user has no permissions
-			if (strstr(line, "*,-"))
-			{
+			if (strstr(line, "*,-")) {
 				result.status = APPROVE_REQUEST_TOKEN_SUCCESS;
 				return &result;
 			}
 			// Allocate memory for permissions array
-			user_infos[i].resource_permissions = (char **)calloc(resource_count, sizeof(char *));
+			user_infos[i].resource_permissions =
+				(char **)calloc(resource_count, sizeof(char *));
 			char *resource = strtok(line, ",");
 			char *permissions = strtok(NULL, ",");
 			// trim newline
 			trim_string(permissions);
-			do
-			{
+			do {
 				// Check if resource exists
-				for (int j = 0; j < resource_count; j++)
-				{
-					if (!strcmp(resources[j], resource))
-					{
+				for (int j = 0; j < resource_count; j++) {
+					if (!strcmp(resources[j], resource)) {
 						// Assign resource permissions to user
 						user_infos[i].resource_permissions[j] = permissions;
 						break;
@@ -173,13 +159,11 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 				}
 				// Read next resource and permissions
 				resource = strtok(NULL, ",");
-				if (resource == NULL)
-				{
+				if (!resource)
 					break;
-				}
 				permissions = strtok(NULL, ",");
 				trim_string(permissions);
-			} while (resource != NULL && permissions != NULL);
+			} while (resource && permissions);
 
 			// Answer request
 			result.status = APPROVE_REQUEST_TOKEN_SUCCESS;
@@ -192,7 +176,8 @@ approve_request_token_1_svc(approve_request_token_arg *argp, struct svc_req *rqs
 }
 
 request_access_token_ret *
-request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp)
+request_access_token_1_svc(request_access_token_arg *argp,
+						   struct svc_req *rqstp)
 {
 	static request_access_token_ret result;
 
@@ -201,36 +186,30 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 	int automatically_refresh_token = argp->automatically_refresh_token;
 
 	// Search user in db
-	for (int i = 0; i < users_count; i++)
-	{
-		if (!strcmp(userid, user_infos[i].userid))
-		{
+	for (int i = 0; i < users_count; i++) {
+		if (!strcmp(userid, user_infos[i].userid)) {
 			// Check if token is valid
-			if (user_infos[i].auth_token == NULL)
-			{
+			if (!user_infos[i].auth_token) {
 				result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
 				return &result;
 			}
-			if (!strcmp(auth_token, user_infos[i].auth_token))
-			{
-				// Check if user has signed the token and received any permissions
+			if (!strcmp(auth_token, user_infos[i].auth_token)) {
+				// Check if user has signed the token and received permissions
 				// (Users with permission *,- fall into this category too)
-				if (user_infos[i].resource_permissions == NULL)
-				{
+				if (!user_infos[i].resource_permissions) {
 					result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
 					return &result;
 				}
 				// Generate access token
 				char *access_token = generate_access_token(auth_token);
 				result.access_token = access_token;
-				// Generate renew token only if user has requested automatic refresh
-				if (automatically_refresh_token)
-				{
+				// Generate renew token only if
+				// user has requested automatic refresh
+				if (automatically_refresh_token) {
 					result.renew_token = generate_access_token(access_token);
-				}
-				else
-				{
-					// If user didn't ask for automatic refresh, I still need to assign memory
+				} else {
+					// If user didn't ask for automatic refresh,
+					// I still need to assign memory
 					// so the RPC call can encode the data
 					result.renew_token = (char *)malloc(1);
 				}
@@ -238,10 +217,10 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				result.status = REQUEST_ACESS_TOKEN_SUCCESS;
 				user_infos[i].access_token = access_token;
 				user_infos[i].availability = global_token_availability;
-				user_infos[i].automatically_refresh_token = automatically_refresh_token;
+				user_infos[i].automatically_refresh_token =
+					automatically_refresh_token;
 				printf("  AccessToken = %s\n", access_token);
-				if (automatically_refresh_token)
-				{
+				if (automatically_refresh_token) {
 					printf("  RefreshToken = %s\n", result.renew_token);
 					// The renew token becomes the new auth token
 					user_infos[i].auth_token = result.renew_token;
@@ -249,12 +228,9 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 				fflush(stdout);
 				return &result;
 			}
-			else
-			{
-				// Token not valid
-				result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
-				return &result;
-			}
+			// Token not valid
+			result.status = REQUEST_ACESS_TOKEN_REQUEST_DENIED;
+			return &result;
 		}
 	}
 
@@ -262,7 +238,8 @@ request_access_token_1_svc(request_access_token_arg *argp, struct svc_req *rqstp
 }
 
 refresh_access_token_ret *
-refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp)
+refresh_access_token_1_svc(refresh_access_token_arg *argp,
+						   struct svc_req *rqstp)
 {
 	static refresh_access_token_ret  result;
 
@@ -271,27 +248,21 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 
 	// Search for user in db
 	// Search user in db
-	for (int i = 0; i < users_count; i++)
-	{
-		if (!strcmp(userid, user_infos[i].userid))
-		{
+	for (int i = 0; i < users_count; i++) {
+		if (!strcmp(userid, user_infos[i].userid)) {
 			// Check if token is valid
-			if (user_infos[i].auth_token == NULL)
-			{
+			if (!user_infos[i].auth_token) {
 				result.status = REFRESH_ACESS_TOKEN_ERROR;
 				return &result;
 			}
 			// Check if user has requested automatic refresh previously
-			if (!user_infos[i].automatically_refresh_token)
-			{
+			if (!user_infos[i].automatically_refresh_token) {
 				result.status = REFRESH_ACESS_TOKEN_ERROR;
 				return &result;
 			}
-			if (!strcmp(renew_token, user_infos[i].auth_token))
-			{
+			if (!strcmp(renew_token, user_infos[i].auth_token)) {
 				// Check if user has signed the token
-				if (user_infos[i].resource_permissions == NULL)
-				{
+				if (!user_infos[i].resource_permissions) {
 					result.status = REFRESH_ACESS_TOKEN_ERROR;
 					return &result;
 				}
@@ -310,16 +281,60 @@ refresh_access_token_1_svc(refresh_access_token_arg *argp, struct svc_req *rqstp
 				fflush(stdout);
 				return &result;
 			}
-			else
-			{
-				// Token not valid
-				result.status = REFRESH_ACESS_TOKEN_ERROR;
-				return &result;
-			}
+			// Token not valid
+			result.status = REFRESH_ACESS_TOKEN_ERROR;
+			return &result;
 		}
 	}
 
 	return &result;
+}
+
+void check_resource_permissions(validate_delegated_action_ret *result,
+								user_info_t *user, char *resource,
+								char *op_type)
+{
+	// Check if user has permission
+	// Note: If user has an access token, then his auth token must have been
+	//		 already signed, so resource_permissions is initialized
+	for (int j = 0; j < resource_count; j++) {
+		if (!strcmp(resources[j], resource)) {
+			// Check if user has any permissions for the resource
+			if (!user->resource_permissions[j]) {
+				printf("DENY (%s,%s,%s,%d)\n", op_type, resource,
+					   user->access_token, user->availability);
+				result->status =
+					VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
+				fflush(stdout);
+				return;
+			}
+			// Check if user has permission to execute the operation
+			char op_type_chr;
+			if (op_type[0] == 'E')
+				op_type_chr = 'X';
+			else
+				op_type_chr = op_type[0];
+			if (strchr(user->resource_permissions[j],
+					   op_type_chr)) {
+				printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource,
+					   user->access_token, user->availability);
+				result->status =
+					VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED;
+				fflush(stdout);
+				return;
+			}
+			printf("DENY (%s,%s,%s,%d)\n", op_type, resource,
+				   user->access_token, user->availability);
+			result->status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
+			fflush(stdout);
+			return;
+		}
+	}
+	// Resource not found
+	result->status = VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND;
+	printf("DENY (%s,%s,%s,%d)\n", op_type, resource,
+		   user->access_token, user->availability);
+	fflush(stdout);
 }
 
 validate_delegated_action_ret *
@@ -333,8 +348,7 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp,
 	char *op_type = argp->op_type;
 
 	// Check if request has access token
-	if (access_token == NULL)
-	{
+	if (!access_token) {
 		printf("DENY (%s,%s,,0)\n", op_type, resource);
 		result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
 		fflush(stdout);
@@ -342,17 +356,13 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp,
 	}
 
 	// Search for user with the given access token
-	for (int i = 0; i < users_count; i++)
-	{
-		if (user_infos[i].access_token == NULL)
-		{
+	user_info_t *user = NULL;
+	for (int i = 0; i < users_count; i++) {
+		if (!user_infos[i].access_token)
 			continue;
-		}
-		if (!strcmp(user_infos[i].access_token, access_token))
-		{
+		if (!strcmp(user_infos[i].access_token, access_token)) {
 			// First of all, check if token is expired
-			if (user_infos[i].availability == 0)
-			{
+			if (user_infos[i].availability == 0) {
 				printf("DENY (%s,%s,,%d)\n", op_type, resource,
 					   user_infos[i].availability);
 				result.status = VALIDATE_DELEGATED_ACTION_TOKEN_EXPIRED;
@@ -361,64 +371,19 @@ validate_delegated_action_1_svc(validate_delegated_action_arg *argp,
 			}
 			// If still available, decrement availability
 			user_infos[i].availability--;
-			// Check if user has permission
-			// Note: If user has an access token, then his auth token
-			// 		 must have been already signed,
-			//       so resource_permissions is initialized
-			for (int j = 0; j < resource_count; j++)
-			{
-				if (!strcmp(resources[j], resource))
-				{
-					// Check if user has any permissions for the resource
-					if (user_infos[i].resource_permissions[j] == NULL)
-					{
-						printf("DENY (%s,%s,%s,%d)\n", op_type, resource,
-							   user_infos[i].access_token,
-							   user_infos[i].availability);
-						result.status =
-							VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
-						fflush(stdout);
-						return &result;
-					}
-					// Check if user has permission to execute the operation
-					char op_type_chr;
-					if (op_type[0] == 'E')
-					{
-						op_type_chr = 'X';
-					}
-					else
-					{
-						op_type_chr = op_type[0];
-					}
-					if (strchr(user_infos[i].resource_permissions[j],
-							   op_type_chr))
-					{
-						printf("PERMIT (%s,%s,%s,%d)\n", op_type, resource, 
-							   user_infos[i].access_token,
-							   user_infos[i].availability);
-						result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_GRANTED;
-						fflush(stdout);
-						return &result;
-					}
-					else
-					{
-						printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
-						result.status = VALIDATE_DELEGATED_ACTION_OPERATION_NOT_PERMITTED;
-						fflush(stdout);
-						return &result;
-					}
-				}
-			}
-			// Resource not found
-			result.status = VALIDATE_DELEGATED_ACTION_RESOURCE_NOT_FOUND;
-			printf("DENY (%s,%s,%s,%d)\n", op_type, resource, user_infos[i].access_token, user_infos[i].availability);
-			fflush(stdout);
-			return &result;
+			user = &user_infos[i];
+			break;
 		}
 	}
-	// Access token not found
-	printf("DENY (%s,%s,,0)\n", op_type, resource);
-	result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
-	fflush(stdout);
+	if (!user) {
+		// Access token not found
+		printf("DENY (%s,%s,,0)\n", op_type, resource);
+		result.status = VALIDATE_DELEGATED_ACTION_PERMISSION_DENIED;
+		fflush(stdout);
+		return &result;
+	}
+
+	// Check if user has permission
+	check_resource_permissions(&result, user, resource, op_type);
 	return &result;
 }
