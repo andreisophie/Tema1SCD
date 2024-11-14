@@ -1,7 +1,7 @@
 /* Request Authorization structs */
 
 struct request_authorization_arg {
-    string userID<>;
+    string userid<>;
 };
 
 enum request_authorization_status {
@@ -32,7 +32,7 @@ struct approve_request_token_ret {
 /* Request Access Token structs */
 
 struct request_access_token_arg {
-    string userID<>;
+    string userid<>;
     string auth_token<>;
     int automatically_refresh_token;
 };
@@ -52,7 +52,7 @@ struct request_access_token_ret {
 /* Refresh Access Token structs */
 
 struct refresh_access_token_arg {
-    string userID<>;
+    string userid<>;
     string renew_token<>;
 };
 
